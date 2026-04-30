@@ -316,10 +316,13 @@ Contributions are welcome! Here's how to get started:
 MIT — see [LICENSE](LICENSE).
 
 ---
-
+## Contributers
 <div align="center">
 
-**Built by [vaishcodescape](https://github.com/vaishcodescape)**
+<a href="https://github.com/vaishcodescape/Omni-Graph/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=vaishcodescape/Omni-Graph" />
+</a>
+
 
 If you found this project useful, consider giving it a star!
 
