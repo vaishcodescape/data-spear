@@ -8,6 +8,7 @@
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16+-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
 [![Anthropic](https://img.shields.io/badge/Anthropic-Claude-D4A574?style=for-the-badge&logo=anthropic&logoColor=white)](https://www.anthropic.com/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-REST_API-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![MCP](https://img.shields.io/badge/MCP-Server-8B5CF6?style=for-the-badge&logo=anthropic&logoColor=white)](https://modelcontextprotocol.io/)
 [![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://docs.docker.com/compose/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](LICENSE)
 
@@ -27,6 +28,7 @@ Deploy in one command with Docker. Integrate with any client via the REST API. O
 
 ## What's New
 
+- **MCP Server** — Native Model Context Protocol server: plug OmniGraph directly into Claude Desktop as 13 tools, 3 resources, and 3 reusable prompts — no REST calls needed
 - **REST API** — Full FastAPI layer covering document ingest, search, Claude agent chat, and graph management
 - **File ingestion** — Upload PDF, DOCX, or TXT files; fetch and ingest any public URL automatically
 - **Claude-powered NLP** — Entity/concept/relationship extraction upgraded from static keyword lists to `claude-haiku-4-5` LLM extraction (keywords merged as fallback)
@@ -85,6 +87,7 @@ Deploy in one command with Docker. Integrate with any client via the REST API. O
 | **LLM Agent** | Anthropic Claude (tool-use + streaming) | Agentic RAG with 5 retrieval tools |
 | **NLP Extraction** | `claude-haiku-4-5` + keyword fallback | Entity, concept, relationship extraction |
 | **File Parsing** | pdfminer.six · python-docx · httpx + BeautifulSoup4 | PDF / DOCX / URL text extraction |
+| **MCP Server** | Model Context Protocol (mcp SDK) | Native Claude Desktop integration |
 | **Deployment** | Docker + docker-compose | One-command full-stack deployment |
 | **Terminal UI** | ANSI console | Interactive TUI (still available) |
 
@@ -185,6 +188,81 @@ uvicorn api.main:app --reload --port 8000
 
 # 4b. Or use the terminal UI
 python exec.py
+```
+
+---
+
+## MCP Server — Claude Desktop Integration
+
+OmniGraph ships as a first-class **Model Context Protocol server**. Add it to Claude Desktop and Claude can directly search the knowledge graph, ingest documents, explore the entity graph, and run research workflows — without any manual API calls.
+
+### Setup (Claude Desktop)
+
+1. Copy `claude_desktop_config.example.json` into your Claude Desktop config:
+   - **Mac / Linux:** `~/.claude/claude_desktop_config.json`
+   - **Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
+
+2. Update the `cwd` field to your absolute path and fill in your API keys.
+
+3. Restart Claude Desktop — OmniGraph will appear in the tools panel.
+
+```json
+{
+  "mcpServers": {
+    "omnigraph": {
+      "command": "python",
+      "args": ["-m", "mcp_server.server"],
+      "cwd": "/absolute/path/to/Omni-Graph",
+      "env": {
+        "ANTHROPIC_API_KEY": "sk-ant-...",
+        "VOYAGE_API_KEY": "pa-...",
+        "OMNIGRAPH_DB_HOST": "localhost",
+        "OMNIGRAPH_DB_USER": "postgres",
+        "OMNIGRAPH_DB_PASSWORD": "postgres"
+      }
+    }
+  }
+}
+```
+
+### MCP Tools (13)
+
+| Tool | Description |
+|------|-------------|
+| `search` | Hybrid / fulltext / semantic / graph search across all documents |
+| `read_document` | Fetch full document content by ID |
+| `find_experts` | Domain experts ranked by concept contribution |
+| `get_entity_documents` | Documents linked to a named entity |
+| `find_related_concepts` | Concept hierarchy + co-occurrence |
+| `ingest_document` | Ingest text into the knowledge graph |
+| `ingest_url` | Fetch a URL and ingest its content |
+| `graph_stats` | Entity / relation / concept / document counts |
+| `list_entities` | Browse entities with optional type filter |
+| `entity_neighborhood` | N-hop entity graph traversal |
+| `list_documents` | Paginated document listing |
+| `extract_entities` | Run Claude NLP extraction on arbitrary text (no DB write) |
+| `build_graph` | Backfill extraction for all unprocessed documents |
+
+### MCP Resources (3)
+
+| URI | Description |
+|-----|-------------|
+| `omnigraph://graph/stats` | Live knowledge graph statistics |
+| `omnigraph://documents/recent` | 20 most recently ingested documents |
+| `omnigraph://entities/top` | 50 highest-confidence entities |
+
+### MCP Prompts (3)
+
+| Prompt | Arguments | What it does |
+|--------|-----------|--------------|
+| `research_topic` | `topic`, `depth` | Deep-research any topic: search → read → concepts → experts → synthesize |
+| `analyze_document` | `document_id` | Full document analysis: content → entities → related docs → experts |
+| `explore_entity` | `entity_name` | Map all entity connections: neighborhood → documents → concepts |
+
+### Run standalone (debug)
+
+```bash
+python -m mcp_server.server
 ```
 
 ---
@@ -388,6 +466,9 @@ Omni-Graph/
 ├── docker-compose.yml
 ├── .env.example
 ├── database-schema.jpeg
+├── mcp_server/                      # MCP Server (Claude Desktop)
+│   └── server.py                    # 13 tools, 3 resources, 3 prompts
+├── claude_desktop_config.example.json
 ├── api/                             # REST API layer
 │   ├── main.py                      # FastAPI app + all routes
 │   ├── models.py                    # Pydantic request/response schemas
