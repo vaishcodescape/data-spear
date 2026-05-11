@@ -3,7 +3,6 @@
 <img src="./database-schema.jpeg" alt="OmniGraph" width="860" />
 
 ### AI-Powered Knowledge Graph Platform
-## Tech Stack
 
 <p>
   <a href="https://www.python.org/"><img src="https://img.shields.io/badge/Python_3.11-14191f?logo=python&logoColor=3776AB" alt="Python" /></a>
