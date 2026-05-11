@@ -1,3 +1,5 @@
+<div align="center">
+
 # OmniGraph
 
 **An enterprise-grade knowledge graph and agentic RAG platform — fully automated and API-first.**
@@ -16,9 +18,11 @@ Deploy in one command with Docker. Integrate with any client via the REST API. O
 - **Docker** — One-command deployment: `docker compose up` — pgvector + API, schema auto-initialized
 - **Auto graph building** — Every ingested document is automatically entity-extracted; `POST /api/v1/graph/build` backfills any gaps
 
----
+**Ingest documents. Extract knowledge graphs. Query with AI agents.**
 
-## Highlights
+OmniGraph ingests organizational documents, extracts entities, concepts, and relationships into a queryable graph, and exposes retrieval through a hybrid search engine (full-text + vector + graph traversal) fronted by an Anthropic tool-use agent. Built around production concerns: RBAC, sensitivity tiers, audit trails, versioning, and deterministic deduplication.
+
+<br/>
 
 - **Hybrid retrieval engine** — Postgres full-text (`tsvector` + GIN), 1024-dim Voyage AI vector similarity, and graph traversal — unified behind a single weighted ranker
 - **Agentic RAG** — Anthropic Claude agent with a native tool-use loop exposing five RBAC-gated retrieval tools (`hybrid_search`, `find_experts`, `get_entity_documents`, `find_related_concepts`, `get_document_content`)
@@ -359,7 +363,7 @@ Copy `.env.example` to `.env` and fill in your values.
 
 ---
 
-## Repository Layout
+## Configuration
 
 ```text
 Omni-Graph/
@@ -409,9 +413,7 @@ Omni-Graph/
 
 Seeded by `sample_data.sql`: `agarwal.priya` · `chen.wei` · `johnson.mark` · `martinez.sofia` · `okafor.emeka` · `tanaka.yuki` · `williams.alex` · `kumar.rahul` · `fischer.anna` · `brown.david`
 
----
-
-## Notes
+### Areas for Contribution
 
 - SQL initialization order: `schema.sql` → `sample_data.sql` → `procedures_triggers.sql`. Docker handles this automatically.
 - To grant `view_graph` permission to the admin role:
@@ -428,3 +430,16 @@ WHERE role_name = 'admin'
 ## License
 
 MIT — see [LICENSE](LICENSE).
+
+---
+## Contributers
+<div align="center">
+
+<a href="https://github.com/vaishcodescape/Omni-Graph/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=vaishcodescape/Omni-Graph" />
+</a>
+
+
+If you found this project useful, consider giving it a star!
+
+</div>
