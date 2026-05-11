@@ -30,7 +30,7 @@ Ingest PDFs, DOCX, URLs, or raw text. Query with four search strategies, a RAG a
 OmniGraph ingests documents, extracts entities and relationships using Claude AI, embeds everything with Voyage AI, and stores it in a 19-table PostgreSQL schema with pgvector. Three interfaces share the same core engine -- nothing is locked to a single client.
 
 - **Ingest anything** -- PDF, DOCX, URL, or plain text with SHA-256 deduplication and automatic versioning
-- **Extract knowledge automatically** -- Claude Haiku pulls entities, typed relationships, and concepts with confidence scores
+- **Extract knowledge automatically** -- Claude pulls entities, typed relationships, and concepts with confidence scores
 - **Search four ways** -- fulltext, semantic, graph traversal, and weighted hybrid with RBAC post-filtering
 - **Ask questions with citations** -- conversational RAG agent powered by Claude Opus tool-use loop
 - **Plug into Claude Desktop** -- 13-tool MCP server, no REST calls or glue code required
@@ -302,8 +302,6 @@ We welcome contributions! If you have a suggestion that would make OmniGraph bet
 5. Open a Pull Request
 
 You can also [open issues](https://github.com/vaishcodescape/Omni-Graph/issues) for bugs or feature requests.
-
-[![GitHub](https://img.shields.io/badge/GitHub-555?logo=github)](https://github.com/vaishcodescape)
 
 ## License
 
