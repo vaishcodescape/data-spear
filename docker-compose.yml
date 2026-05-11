@@ -1,0 +1,41 @@
+version: "3.9"
+
+services:
+  # ── PostgreSQL with pgvector ─────────────────────────────────────────────
+  postgres:
+    image: pgvector/pgvector:pg16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${OMNIGRAPH_DB_NAME:-omnigraph}
+      POSTGRES_USER: ${OMNIGRAPH_DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${OMNIGRAPH_DB_PASSWORD:-postgres}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      # SQL files run in alphabetical order on first startup
+      - ./sql/schema.sql:/docker-entrypoint-initdb.d/01_schema.sql
+      - ./sql/procedures_triggers.sql:/docker-entrypoint-initdb.d/02_procedures.sql
+      - ./sql/sample_data.sql:/docker-entrypoint-initdb.d/03_sample_data.sql
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${OMNIGRAPH_DB_USER:-postgres} -d ${OMNIGRAPH_DB_NAME:-omnigraph}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # ── OmniGraph REST API ───────────────────────────────────────────────────
+  api:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      OMNIGRAPH_DB_HOST: postgres
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  pgdata:

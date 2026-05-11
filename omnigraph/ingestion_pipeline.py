@@ -52,21 +52,18 @@ class DatabaseConnection:
 
     def __init__(
         self,
-        host: str = "localhost",
-        port: int = 5432,
-        dbname: str = "omnigraph",
+        host: Optional[str] = None,
+        port: Optional[int] = None,
+        dbname: Optional[str] = None,
         user: Optional[str] = None,
         password: Optional[str] = None,
     ):
-        db_user = user or os.getenv("OMNIGRAPH_DB_USER", "postgres")
-        db_password = password or os.getenv("OMNIGRAPH_DB_PASSWORD", "postgres")
-
         self.connection_params = {
-            "host": host,
-            "port": port,
-            "dbname": dbname,
-            "user": db_user,
-            "password": db_password,
+            "host": host or os.getenv("OMNIGRAPH_DB_HOST", "localhost"),
+            "port": port or int(os.getenv("OMNIGRAPH_DB_PORT", "5432")),
+            "dbname": dbname or os.getenv("OMNIGRAPH_DB_NAME", "omnigraph"),
+            "user": user or os.getenv("OMNIGRAPH_DB_USER", "postgres"),
+            "password": password or os.getenv("OMNIGRAPH_DB_PASSWORD", "postgres"),
         }
         self._conn = None
 
