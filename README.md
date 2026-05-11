@@ -2,7 +2,7 @@
 
 <br/>
 
-<h1>🕸️ OmniGraph</h1>
+<h1>OmniGraph</h1>
 
 <p><strong>Turn documents into a queryable knowledge graph — powered by Claude AI.</strong></p>
 
