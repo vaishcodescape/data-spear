@@ -417,21 +417,65 @@ class KnowledgeGraphBuilder:
             logger.error("Failed to get graph stats: %s", exc)
             return stats
 
-    def build_graph(self) -> Dict:
+    def build_graph(self, extractor=None) -> Dict:
+        """
+        Build / rebuild the knowledge graph.
+
+        If an ``extractor`` (EntityRelationExtractor) is supplied, every document
+        that has no entity links yet is processed automatically so the graph is
+        always up-to-date with all ingested content.
+        """
         logger.info("Starting knowledge graph construction.")
+        processed_count = 0
+
+        if extractor is not None:
+            try:
+                with self.db.conn.cursor() as cur:
+                    cur.execute(
+                        """
+                        SELECT d.document_id
+                        FROM omnigraph.documents d
+                        LEFT JOIN omnigraph.document_entities de
+                               ON de.document_id = d.document_id
+                        WHERE d.is_archived = FALSE
+                          AND de.document_id IS NULL
+                        ORDER BY d.document_id
+                        """
+                    )
+                    unprocessed = [row[0] for row in cur.fetchall()]
+
+                logger.info(
+                    "Found %d documents without entity extractions — processing now.",
+                    len(unprocessed),
+                )
+                for doc_id in unprocessed:
+                    try:
+                        extractor.process_document(doc_id)
+                        processed_count += 1
+                    except Exception as exc:
+                        logger.error(
+                            "Extraction failed for document %d: %s", doc_id, exc,
+                        )
+            except psycopg2.Error as exc:
+                logger.error("Failed to query unprocessed documents: %s", exc)
+
         duplicates = self.detect_duplicate_nodes()
         if duplicates:
             logger.warning("Found %d potential duplicate entity pairs.", len(duplicates))
+
         stats = self.get_graph_stats()
         logger.info(
-            "Graph construction complete: %d entities, %d relations, %d concepts, %d documents.",
+            "Graph build complete: %d entities, %d relations, %d concepts, %d documents. "
+            "(%d documents newly extracted)",
             stats.get("total_entities", 0), stats.get("total_relations", 0),
             stats.get("total_concepts", 0), stats.get("total_documents", 0),
+            processed_count,
         )
         return {
             "stats": stats,
             "duplicates_detected": len(duplicates),
             "duplicate_pairs": duplicates,
+            "documents_newly_extracted": processed_count,
         }
 
 

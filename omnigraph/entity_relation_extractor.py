@@ -1,4 +1,6 @@
+import json
 import logging
+import os
 import re
 from typing import Dict, List, Optional, Set
 
@@ -6,6 +8,8 @@ import psycopg2  # type: ignore[import-untyped]
 from psycopg2.extras import execute_values
 
 logger = logging.getLogger("omnigraph.extractor")
+
+# ── Keyword fallback dictionaries ────────────────────────────────────────────
 
 TECHNOLOGY_KEYWORDS = {
     "Kubernetes", "Docker", "TensorFlow", "PyTorch", "BERT", "GPT",
@@ -62,12 +66,76 @@ PERSON_PATTERN = re.compile(
     r"\b((?:Dr\.|Prof\.|Mr\.|Ms\.|Mrs\.)\s+[A-Z][a-z]+\s+[A-Z][a-z]+)\b"
 )
 
+_VALID_ENTITY_TYPES = {"person", "organization", "technology", "standard", "location", "other"}
+_VALID_DOMAINS = {"AI", "Security", "Infrastructure", "Engineering", "Operations",
+                  "Compliance", "Analytics", "Business", "Other"}
 
-# Regex and keyword-based entity, concept, and relationship extraction.
+_LLM_EXTRACTION_PROMPT = """\
+You are an expert information extraction system for an enterprise knowledge graph.
+
+Extract ALL entities, concepts, and relationships from the text below.
+
+Return ONLY a valid JSON object — no markdown, no explanation:
+{{
+  "entities": [
+    {{
+      "name": "exact name as mentioned in text",
+      "entity_type": "person | organization | technology | standard | location | other",
+      "description": "one-line description",
+      "confidence": 0.85
+    }}
+  ],
+  "concepts": [
+    {{
+      "name": "concept name",
+      "domain": "AI | Security | Infrastructure | Engineering | Operations | Compliance | Analytics | Business | Other"
+    }}
+  ],
+  "relationships": [
+    {{
+      "source": "source entity name (must match an entity above)",
+      "target": "target entity name (must match an entity above)",
+      "relation_type": "uses | developed_by | works_for | depends_on | part_of | collaborates_with | manages | located_in | competitor_of | other",
+      "strength": 0.8
+    }}
+  ]
+}}
+
+Rules:
+- Only extract entities clearly mentioned in the text.
+- confidence: 0.7 (implied/unclear) → 1.0 (explicitly named with full context).
+- Only include relationships explicitly stated — not inferred.
+- strength: 0.5 (implied) → 1.0 (explicitly stated).
+- Relationships must have both source and target present in the entities list.
+
+Text:
+{text}"""
+
+
 class EntityRelationExtractor:
+    """
+    Extracts entities, concepts, and relationships from document text.
 
-    def __init__(self, db_connection):
+    Primary strategy: Claude Haiku LLM extraction (when ANTHROPIC_API_KEY is set).
+    Fallback strategy: regex + keyword matching (always available).
+    Both results are merged so neither source is silently dropped.
+    """
+
+    def __init__(self, db_connection, use_llm: bool = True):
         self.db = db_connection
+        self._use_llm = use_llm and bool(os.getenv("ANTHROPIC_API_KEY"))
+        self._llm_client = None
+
+        if self._use_llm:
+            try:
+                import anthropic
+                self._llm_client = anthropic.Anthropic()
+                logger.info("LLM entity extraction enabled (claude-haiku-4-5).")
+            except ImportError:
+                self._use_llm = False
+                logger.warning("anthropic not installed; using keyword extraction only.")
+
+    # ── Public extraction methods (keyword-based, always available) ───────────
 
     def extract_entities(self, text: str) -> List[Dict]:
         entities = []
@@ -75,7 +143,7 @@ class EntityRelationExtractor:
         entities.extend(self._match_keywords(text, ORGANIZATION_KEYWORDS, "organization"))
         entities.extend(self._match_keywords(text, STANDARD_KEYWORDS, "standard"))
         entities.extend(self._extract_persons(text))
-        logger.info("Extracted %d entities from text.", len(entities))
+        logger.debug("Keyword extraction: %d entities.", len(entities))
         return entities
 
     def extract_concepts(self, text: str) -> List[Dict]:
@@ -92,7 +160,7 @@ class EntityRelationExtractor:
                     "mention_count": count,
                 })
         concepts.sort(key=lambda c: c["relevance_score"], reverse=True)
-        logger.info("Extracted %d concepts from text.", len(concepts))
+        logger.debug("Keyword extraction: %d concepts.", len(concepts))
         return concepts
 
     def extract_relationships(self, text: str, entities: List[Dict]) -> List[Dict]:
@@ -113,17 +181,20 @@ class EntityRelationExtractor:
                         "strength": 0.750,
                     })
 
-        seen = set()
+        seen: set = set()
         unique = []
         for rel in relationships:
             key = (rel["source"], rel["target"], rel["relation_type"])
             if key not in seen:
                 seen.add(key)
                 unique.append(rel)
-        logger.info("Extracted %d relationships from text.", len(unique))
+        logger.debug("Keyword extraction: %d relationships.", len(unique))
         return unique
 
+    # ── Primary entry point ───────────────────────────────────────────────────
+
     def process_document(self, document_id: int) -> Dict:
+        """Extract and store entities, concepts, and relationships for a document."""
         with self.db.conn.cursor() as cur:
             cur.execute(
                 "SELECT content FROM omnigraph.documents WHERE document_id = %s",
@@ -135,23 +206,172 @@ class EntityRelationExtractor:
             return {"entities": [], "concepts": [], "relationships": []}
 
         content = row[0]
-        entities = self.extract_entities(content)
-        concepts = self.extract_concepts(content)
-        relationships = self.extract_relationships(content, entities)
+
+        if self._use_llm:
+            entities, concepts, relationships = self._extract_merged(content)
+        else:
+            entities = self.extract_entities(content)
+            concepts = self.extract_concepts(content)
+            relationships = self.extract_relationships(content, entities)
 
         self._store_entities(entities, document_id)
         self._store_concepts(concepts, document_id)
         self._store_relationships(relationships, document_id)
 
         logger.info(
-            "Processed document %d: %d entities, %d concepts, %d relationships.",
+            "Document %d: stored %d entities, %d concepts, %d relationships.",
             document_id, len(entities), len(concepts), len(relationships),
         )
-        return {
-            "entities": entities,
-            "concepts": concepts,
-            "relationships": relationships,
-        }
+        return {"entities": entities, "concepts": concepts, "relationships": relationships}
+
+    # ── LLM extraction ────────────────────────────────────────────────────────
+
+    def _extract_with_llm(self, text: str) -> Dict:
+        """Call Claude Haiku to extract structured entities/concepts/relationships."""
+        truncated = text[:6000]
+        prompt = _LLM_EXTRACTION_PROMPT.format(text=truncated)
+
+        response = self._llm_client.messages.create(
+            model="claude-haiku-4-5-20251001",
+            max_tokens=4000,
+            messages=[{"role": "user", "content": prompt}],
+        )
+
+        raw = response.content[0].text.strip()
+        # Strip markdown code fences if the model added them
+        if "```" in raw:
+            raw = re.sub(r"```(?:json)?\n?", "", raw).strip()
+            raw = re.sub(r"\n?```", "", raw).strip()
+
+        return json.loads(raw)
+
+    def _extract_merged(self, text: str):
+        """
+        Run LLM extraction and merge with keyword results.
+        Falls back to keyword-only if LLM raises any exception.
+        Returns (entities, concepts, relationships).
+        """
+        try:
+            llm_data = self._extract_with_llm(text)
+            entities = self._normalize_llm_entities(llm_data.get("entities", []), text)
+            concepts = self._normalize_llm_concepts(llm_data.get("concepts", []), text)
+
+            # Merge keyword entities so well-known tech terms are never missed
+            kw_entities = self.extract_entities(text)
+            seen_names = {e["name"].lower() for e in entities}
+            for e in kw_entities:
+                if e["name"].lower() not in seen_names:
+                    entities.append(e)
+                    seen_names.add(e["name"].lower())
+
+            # Merge keyword concepts
+            kw_concepts = self.extract_concepts(text)
+            seen_concepts = {c["name"].lower() for c in concepts}
+            for c in kw_concepts:
+                if c["name"].lower() not in seen_concepts:
+                    concepts.append(c)
+                    seen_concepts.add(c["name"].lower())
+
+            # LLM relationships, supplemented by regex
+            relationships = self._normalize_llm_relationships(
+                llm_data.get("relationships", []), entities,
+            )
+            rel_keys = {(r["source"], r["target"], r["relation_type"]) for r in relationships}
+            for r in self.extract_relationships(text, entities):
+                key = (r["source"], r["target"], r["relation_type"])
+                if key not in rel_keys:
+                    relationships.append(r)
+                    rel_keys.add(key)
+
+            logger.info(
+                "LLM+keyword extraction: %d entities, %d concepts, %d relationships.",
+                len(entities), len(concepts), len(relationships),
+            )
+            return entities, concepts, relationships
+
+        except Exception as exc:
+            logger.warning(
+                "LLM extraction failed (%s). Falling back to keyword extraction.", exc,
+            )
+            entities = self.extract_entities(text)
+            concepts = self.extract_concepts(text)
+            relationships = self.extract_relationships(content=text, entities=entities)
+            return entities, concepts, relationships
+
+    # ── LLM output normalizers ────────────────────────────────────────────────
+
+    def _normalize_llm_entities(self, raw: List[Dict], text: str) -> List[Dict]:
+        result = []
+        seen: set = set()
+        for e in raw:
+            name = (e.get("name") or "").strip()
+            if not name or name.lower() in seen:
+                continue
+            seen.add(name.lower())
+            etype = (e.get("entity_type") or "other").lower().strip()
+            if etype not in _VALID_ENTITY_TYPES:
+                etype = "other"
+            count = len(re.findall(re.escape(name), text, re.IGNORECASE))
+            result.append({
+                "name": name,
+                "entity_type": etype,
+                "confidence": round(min(1.0, max(0.0, float(e.get("confidence", 0.8)))), 3),
+                "mention_count": max(count, 1),
+                "description": (e.get("description") or ""),
+                "positions": [],
+            })
+        return result
+
+    def _normalize_llm_concepts(self, raw: List[Dict], text: str) -> List[Dict]:
+        result = []
+        seen: set = set()
+        for c in raw:
+            name = (c.get("name") or "").strip()
+            if not name or name.lower() in seen:
+                continue
+            seen.add(name.lower())
+            domain = (c.get("domain") or "Other").strip()
+            if domain not in _VALID_DOMAINS:
+                domain = "Other"
+            count = len(re.findall(re.escape(name), text, re.IGNORECASE))
+            result.append({
+                "name": name.title(),
+                "domain": domain,
+                "relevance_score": round(min(1.0, max(count, 1) * 0.15), 3),
+                "mention_count": max(count, 1),
+            })
+        return result
+
+    def _normalize_llm_relationships(
+        self, raw: List[Dict], entities: List[Dict],
+    ) -> List[Dict]:
+        entity_names = {e["name"] for e in entities}
+        result = []
+        seen: set = set()
+        for r in raw:
+            source = (r.get("source") or "").strip()
+            target = (r.get("target") or "").strip()
+            rel_type = (r.get("relation_type") or "other").strip()
+
+            # Try fuzzy match if exact lookup fails
+            if source not in entity_names:
+                source = self._fuzzy_match(source, entity_names) or source
+            if target not in entity_names:
+                target = self._fuzzy_match(target, entity_names) or target
+
+            if source in entity_names and target in entity_names and source != target:
+                key = (source, target, rel_type)
+                if key not in seen:
+                    seen.add(key)
+                    result.append({
+                        "source": source,
+                        "target": target,
+                        "relation_type": rel_type,
+                        "strength": round(min(1.0, max(0.0, float(r.get("strength", 0.75)))), 3),
+                    })
+        return result
+
+    # ── DB storage (unchanged from original) ─────────────────────────────────
 
     def _store_entities(self, entities: List[Dict], document_id: int) -> None:
         if not entities:
@@ -236,17 +456,12 @@ class EntityRelationExtractor:
         except psycopg2.Error:
             self.db.conn.rollback()
 
-    def _store_relationships(
-        self, relationships: List[Dict], document_id: int,
-    ) -> None:
+    def _store_relationships(self, relationships: List[Dict], document_id: int) -> None:
         if not relationships:
             return
         name_to_id: Dict[str, int] = {}
         with self.db.conn.cursor() as cur:
-            names = set()
-            for rel in relationships:
-                names.add(rel["source"])
-                names.add(rel["target"])
+            names = {rel["source"] for rel in relationships} | {rel["target"] for rel in relationships}
             for name in names:
                 cur.execute(
                     "SELECT entity_id FROM omnigraph.entities WHERE name = %s LIMIT 1",
@@ -281,19 +496,17 @@ class EntityRelationExtractor:
         except psycopg2.Error:
             self.db.conn.rollback()
 
+    # ── Static helpers ────────────────────────────────────────────────────────
+
     @staticmethod
-    def _match_keywords(
-        text: str, keywords: Set[str], entity_type: str,
-    ) -> List[Dict]:
+    def _match_keywords(text: str, keywords: Set[str], entity_type: str) -> List[Dict]:
         if not text or not keywords:
             return []
-
         sorted_keywords = sorted(keywords, key=len, reverse=True)
         pattern = re.compile(
             "|".join(re.escape(k) for k in sorted_keywords),
             re.IGNORECASE,
         )
-
         match_positions: Dict[str, List[int]] = {}
         for m in pattern.finditer(text):
             matched_text = m.group(0)
@@ -319,12 +532,10 @@ class EntityRelationExtractor:
     @staticmethod
     def _extract_persons(text: str) -> List[Dict]:
         persons = []
-        seen = {}
+        seen: Dict[str, List[int]] = {}
         for match in PERSON_PATTERN.finditer(text):
             name = match.group(1).strip()
-            positions = seen.setdefault(name, [])
-            positions.append(match.start())
-
+            seen.setdefault(name, []).append(match.start())
         for name, positions in seen.items():
             count = len(positions)
             persons.append({
@@ -341,11 +552,9 @@ class EntityRelationExtractor:
         candidate_lower = candidate.lower().strip()
         if not candidate_lower or not known_names:
             return None
-
         lower_map = {name.lower(): name for name in known_names}
         if candidate_lower in lower_map:
             return lower_map[candidate_lower]
-
         for lower_name, original in lower_map.items():
             if lower_name in candidate_lower or candidate_lower in lower_name:
                 return original
@@ -369,7 +578,9 @@ if __name__ == "__main__":
     by Google, depends on Docker for container orchestration. Microsoft
     Azure competes with AWS in cloud computing. The system uses OAuth 2.0
     for authentication and follows GDPR compliance standards.
-    Dr. Sarah Lin leads the NLP research division.
+    Dr. Sarah Lin leads the NLP research division at the company.
+    The platform leverages federated learning techniques to ensure privacy
+    while training models across distributed data sources.
     """
     logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
     extractor = EntityRelationExtractor(db_connection=None)
