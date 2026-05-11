@@ -1,148 +1,66 @@
 <div align="center">
 
-<br/>
-
 <h1>🕸️ OmniGraph</h1>
 
-<p><strong>Turn documents into a queryable knowledge graph — powered by Claude AI.</strong></p>
+<p><strong>Turn any document into a queryable knowledge graph — powered by Claude AI.</strong></p>
 
 <p>
-Ingest PDFs, URLs, and raw text · Extract entities & relationships with LLM-powered NLP ·<br/>
-Search with hybrid full-text + vector + graph retrieval · Chat via an Anthropic AI agent ·<br/>
-Plug directly into Claude Desktop as an MCP server.
+Ingest PDFs, URLs, and raw text &nbsp;·&nbsp; Extract entities &amp; relationships with LLM NLP &nbsp;·&nbsp; Search with hybrid full-text + vector + graph retrieval &nbsp;·&nbsp; Chat via an Anthropic agent &nbsp;·&nbsp; Plug into Claude Desktop via MCP
 </p>
 
-<br/>
-
-[![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16+-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-REST_API-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
-[![Anthropic](https://img.shields.io/badge/Anthropic-Claude-D4A574?style=for-the-badge&logo=anthropic&logoColor=white)](https://www.anthropic.com/)
-[![MCP](https://img.shields.io/badge/MCP-Server-8B5CF6?style=for-the-badge&logo=anthropic&logoColor=white)](https://modelcontextprotocol.io/)
-[![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://docs.docker.com/compose/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-22C55E?style=for-the-badge)](LICENSE)
-
-<br/>
-
-<table>
-  <tr>
-    <td align="center"><h2>19</h2><sub>Database Tables</sub></td>
-    <td align="center"><h2>13</h2><sub>MCP Tools</sub></td>
-    <td align="center"><h2>4</h2><sub>Search Strategies</sub></td>
-    <td align="center"><h2>1024</h2><sub>Vector Dimensions</sub></td>
-    <td align="center"><h2>6</h2><sub>Stored Procedures</sub></td>
-    <td align="center"><h2>3,500+</h2><sub>Lines of Python</sub></td>
-  </tr>
-</table>
-
-<br/>
+[![Python](https://img.shields.io/badge/Python-3.11+-0d1117?style=flat-square&logo=python&logoColor=3776AB)](https://www.python.org/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16+-0d1117?style=flat-square&logo=postgresql&logoColor=4169E1)](https://www.postgresql.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0d1117?style=flat-square&logo=fastapi&logoColor=009688)](https://fastapi.tiangolo.com/)
+[![Docker](https://img.shields.io/badge/Docker-0d1117?style=flat-square&logo=docker&logoColor=2496ED)](https://docs.docker.com/compose/)
+[![Anthropic](https://img.shields.io/badge/Claude_AI-0d1117?style=flat-square&logo=anthropic&logoColor=D4A574)](https://www.anthropic.com/)
+[![MCP](https://img.shields.io/badge/MCP_Server-0d1117?style=flat-square&logo=anthropic&logoColor=8B5CF6)](https://modelcontextprotocol.io/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-0d1117?style=flat-square&logoColor=22C55E)](LICENSE)
 
 </div>
 
 ---
 
-## What is OmniGraph?
+## What it does
 
-OmniGraph is an **enterprise-grade knowledge graph platform** that transforms unstructured documents into a structured, searchable, and AI-queryable graph. Upload a PDF, paste a URL, or POST raw text — OmniGraph extracts every entity, concept, and relationship using Claude AI, stores them in a relational graph on PostgreSQL + pgvector, and makes everything instantly queryable through four search modes and a conversational AI agent.
-
-It ships three interfaces out of the box:
-
-| Interface | Best for |
-|-----------|----------|
-| **MCP Server** | Native Claude Desktop integration — Claude uses OmniGraph tools directly |
-| **REST API** | Any client, any language — full Swagger docs at `/docs` |
-| **Terminal UI** | Local exploration, demos, and development |
-
----
-
-## Features
-
-<table>
-<tr>
-<td width="50%">
-
-### 🔍 Hybrid Search Engine
-Four retrieval strategies unified behind a single weighted ranker. Full-text (`tsvector` + GIN), 1024-dim semantic vectors (Voyage AI), and entity-graph traversal — blended automatically in hybrid mode.
-
-</td>
-<td width="50%">
-
-### 🤖 Agentic RAG
-An Anthropic Claude agent with a native tool-use loop. It searches, reads, explores the graph, finds experts, and cites every factual claim with a `[doc_id=X]` reference — automatically.
-
-</td>
-</tr>
-<tr>
-<td>
-
-### 🧠 LLM-Powered NLP Extraction
-`claude-haiku-4-5` extracts entities, concepts, and typed relationships from any text. Keyword lists run in parallel as a safety net — nothing slips through.
-
-</td>
-<td>
-
-### 🔌 Native MCP Server
-13 tools, 3 resources, and 3 prompt templates — plug OmniGraph into Claude Desktop in 60 seconds. Claude can ingest, search, and reason over your knowledge graph without writing a line of code.
-
-</td>
-</tr>
-<tr>
-<td>
-
-### 🏢 Enterprise Security Model
-Role-based access control enforced at read time (not just write time) with four sensitivity tiers. Every query is post-filtered, every sensitive access is logged to an immutable audit trail.
-
-</td>
-<td>
-
-### ⚡ One-Command Deploy
-`docker compose up` — PostgreSQL + pgvector + the API server, schema auto-initialized from SQL files. No manual setup, no migration scripts.
-
-</td>
-</tr>
-</table>
+- **Ingests** PDFs, DOCX, URLs, and raw text — deduplicates via SHA-256, versions changed content
+- **Extracts** named entities, typed relationships, and concepts using `claude-haiku-4-5` with a keyword fallback
+- **Stores** everything in a 19-table PostgreSQL schema with `pgvector` for 1024-dim embeddings
+- **Serves** hybrid search (full-text + semantic + graph), a Claude RAG agent with citations, a REST API, and a native MCP server for Claude Desktop
 
 ---
 
 ## Quick Start
 
-### Docker (recommended)
+**Docker — recommended, zero setup:**
 
 ```bash
 git clone https://github.com/vaishcodescape/Omni-Graph.git
 cd Omni-Graph
-
-cp .env.example .env
-# Open .env and add your ANTHROPIC_API_KEY and VOYAGE_API_KEY
-
+cp .env.example .env          # add ANTHROPIC_API_KEY + VOYAGE_API_KEY
 docker compose up
 ```
 
-That's it. The API is live at **http://localhost:8000** and interactive Swagger docs are at **http://localhost:8000/docs**.
-
-PostgreSQL schema, stored procedures, and seed data initialize automatically on first run.
+API live at `http://localhost:8000` · Swagger at `http://localhost:8000/docs`
 
 <details>
-<summary><strong>Local setup (without Docker)</strong></summary>
+<summary><strong>Local setup (no Docker)</strong></summary>
 <br/>
 
 ```bash
-# 1. Create and seed the database
+# 1. Postgres with pgvector extension
 createdb omnigraph
 psql -d omnigraph -f sql/schema.sql
-psql -d omnigraph -f sql/sample_data.sql
 psql -d omnigraph -f sql/procedures_triggers.sql
+psql -d omnigraph -f sql/sample_data.sql
 
-# 2. Install Python dependencies
+# 2. Python deps
 pip install -r requirements.txt
+cp .env.example .env          # fill in your keys
 
-# 3. Configure environment
-cp .env.example .env    # then fill in your API keys
-
-# 4a. Run the REST API
+# 3a. Run the REST API
 uvicorn api.main:app --reload --port 8000
 
-# 4b. Or run the terminal UI
+# 3b. Or the terminal UI
 python exec.py
 ```
 
@@ -150,56 +68,118 @@ python exec.py
 
 ---
 
-## How It Works
+## Architecture
 
-Every document goes through a five-stage automated pipeline:
+Every document goes through a five-stage pipeline:
 
 ```
- Input (text / PDF / DOCX / URL)
+Input (text / PDF / DOCX / URL)
         │
         ▼
- ┌─────────────────────────────────────────────────┐
- │  1. PARSE & NORMALIZE                           │
- │     Strip control chars · collapse whitespace   │
- └──────────────────────────┬──────────────────────┘
-                            │
-                            ▼
- ┌─────────────────────────────────────────────────┐
- │  2. DEDUPLICATE                                 │
- │     SHA-256 hash → skip if seen · version if   │
- │     content changed · always idempotent         │
- └──────────────────────────┬──────────────────────┘
-                            │
-                            ▼
- ┌─────────────────────────────────────────────────┐
- │  3. EMBED                                       │
- │     Voyage AI voyage-3 → 1024-dim vector →     │
- │     upsert into pgvector on (type, id, model)  │
- └──────────────────────────┬──────────────────────┘
-                            │
-                            ▼
- ┌─────────────────────────────────────────────────┐
- │  4. EXTRACT  (Claude Haiku + keyword fallback)  │
- │     Entities → document_entities               │
- │     Concepts → document_concepts               │
- │     Relations → directed graph edges           │
- └──────────────────────────┬──────────────────────┘
-                            │
-                            ▼
- ┌─────────────────────────────────────────────────┐
- │  5. QUERY-READY                                 │
- │     Full-text · Semantic · Graph · Hybrid       │
- │     All results RBAC-filtered at read time      │
- └─────────────────────────────────────────────────┘
+┌───────────────────────────────────┐
+│  1. PARSE & NORMALIZE             │  api/file_parser.py
+│     Strip noise · collapse space  │
+└────────────────┬──────────────────┘
+                 │
+                 ▼
+┌───────────────────────────────────┐
+│  2. DEDUPLICATE                   │  omnigraph/ingestion_pipeline.py
+│     SHA-256 hash → skip / version │
+└────────────────┬──────────────────┘
+                 │
+                 ▼
+┌───────────────────────────────────┐
+│  3. EMBED                         │  omnigraph/embedder.py
+│     Voyage AI voyage-3 → 1024-dim │
+│     upsert into pgvector          │
+└────────────────┬──────────────────┘
+                 │
+                 ▼
+┌───────────────────────────────────┐
+│  4. EXTRACT  (LLM + fallback)     │  omnigraph/entity_relation_extractor.py
+│     Entities · Concepts · Relations│
+└────────────────┬──────────────────┘
+                 │
+                 ▼
+┌───────────────────────────────────┐
+│  5. QUERY-READY                   │  omnigraph/semantic_query_engine.py
+│     Fulltext · Semantic · Graph   │
+│     · Hybrid  (RBAC-filtered)     │
+└───────────────────────────────────┘
+```
+
+### Codebase map
+
+```
+Omni-Graph/
+├── mcp_server/server.py              ← MCP: 13 tools, 3 resources, 3 prompts
+├── api/
+│   ├── main.py                       ← FastAPI: 13 REST endpoints
+│   ├── file_parser.py                ← PDF / DOCX / URL text extraction
+│   ├── models.py                     ← Pydantic request/response schemas
+│   ├── auth.py                       ← X-API-Key middleware
+│   └── dependencies.py               ← DB dependency injection
+├── omnigraph/
+│   ├── ingestion_pipeline.py         ← Normalize · deduplicate · embed
+│   ├── entity_relation_extractor.py  ← Claude NLP + keyword fallback
+│   ├── graph_builder.py              ← Entity/relation CRUD + backfill
+│   ├── semantic_query_engine.py      ← Fulltext / vector / graph / hybrid
+│   ├── access_control_audit.py       ← RBAC · sensitivity · audit log
+│   ├── agentic_rag.py                ← Claude tool-use agent loop
+│   ├── embedder.py                   ← Voyage AI wrapper
+│   └── console_app.py                ← ANSI terminal UI
+└── sql/
+    ├── schema.sql                    ← 19 tables, indexes, constraints
+    ├── procedures_triggers.sql       ← 6 stored procedures + 5 triggers
+    ├── sample_data.sql               ← Seed users, roles, documents
+    └── retrieval.sql                 ← Advanced query examples
 ```
 
 ---
 
-## MCP Server — Claude Desktop in 60 Seconds
+## Contributing
 
-Add OmniGraph to your Claude Desktop config and Claude gains direct access to your knowledge graph:
+Contributions are welcome. Here is the fastest path from zero to a merged PR.
 
-**`~/.claude/claude_desktop_config.json`** (Mac/Linux) or **`%APPDATA%\Claude\claude_desktop_config.json`** (Windows):
+### 1. Set up your dev environment
+
+```bash
+git clone https://github.com/vaishcodescape/Omni-Graph.git
+cd Omni-Graph
+pip install -r requirements.txt
+cp .env.example .env    # add your keys
+docker compose up -d    # start postgres only is fine
+```
+
+### 2. Find something to work on
+
+| Label | Examples |
+|-------|---------|
+| `good first issue` | Additional file formats (PPTX, CSV, Markdown), better error messages, extra curl examples in docs |
+| `enhancement` | New MCP tools, streaming chat responses, frontend UI, OpenTelemetry traces |
+| `bug` | Check the [Issues tab](https://github.com/vaishcodescape/Omni-Graph/issues) |
+
+### 3. Branch and PR conventions
+
+- Branch from `main`: `feat/...`, `fix/...`, `docs/...`
+- Keep PRs focused on one concern — easier to review and bisect
+- Add a short description of *why*, not just *what*
+
+### 4. Key interfaces to know
+
+| Module | Entry point | What to change |
+|--------|------------|----------------|
+| Add a new MCP tool | `mcp_server/server.py` → `list_tools()` + `call_tool()` | Follow existing handler pattern |
+| Add a REST endpoint | `api/main.py` | Add Pydantic model in `api/models.py` |
+| New file format | `api/file_parser.py` → `parse_file()` dispatcher | Add a `parse_xyz()` function |
+| Change extraction | `omnigraph/entity_relation_extractor.py` | `_LLM_EXTRACTION_PROMPT` or `_extract_keywords()` |
+| New search strategy | `omnigraph/semantic_query_engine.py` | `_search_*()` + `search()` router |
+
+---
+
+## MCP — Claude Desktop integration
+
+Add to `~/.claude/claude_desktop_config.json` (Mac/Linux) or `%APPDATA%\Claude\claude_desktop_config.json` (Windows):
 
 ```json
 {
@@ -210,7 +190,7 @@ Add OmniGraph to your Claude Desktop config and Claude gains direct access to yo
       "cwd": "/absolute/path/to/Omni-Graph",
       "env": {
         "ANTHROPIC_API_KEY": "sk-ant-...",
-        "VOYAGE_API_KEY": "pa-...",
+        "VOYAGE_API_KEY":    "pa-...",
         "OMNIGRAPH_DB_HOST": "localhost",
         "OMNIGRAPH_DB_USER": "postgres",
         "OMNIGRAPH_DB_PASSWORD": "postgres"
@@ -220,18 +200,20 @@ Add OmniGraph to your Claude Desktop config and Claude gains direct access to yo
 }
 ```
 
-Restart Claude Desktop — OmniGraph appears in the tools panel. A pre-filled example is in [`claude_desktop_config.example.json`](claude_desktop_config.example.json).
+Restart Claude Desktop — OmniGraph appears in the tools panel.
 
-### MCP Tools
+<details>
+<summary><strong>All 13 MCP tools</strong></summary>
+<br/>
 
-| Category | Tool | What it does |
-|----------|------|--------------|
-| **Search** | `search` | Hybrid / fulltext / semantic / graph search |
+| Category | Tool | Description |
+|----------|------|-------------|
+| **Search** | `search` | Hybrid / fulltext / semantic / graph |
 | | `read_document` | Fetch full document text by ID |
 | | `find_experts` | Domain experts ranked by concept contribution |
 | | `get_entity_documents` | All documents linked to a named entity |
 | | `find_related_concepts` | Concept hierarchy + co-occurrence graph |
-| **Ingest** | `ingest_document` | Add text to the knowledge graph |
+| **Ingest** | `ingest_document` | Add text to the graph |
 | | `ingest_url` | Fetch a URL and ingest its content |
 | **Explore** | `graph_stats` | Live entity / relation / concept counts |
 | | `list_entities` | Browse entities with optional type filter |
@@ -240,50 +222,38 @@ Restart Claude Desktop — OmniGraph appears in the tools panel. A pre-filled ex
 | **Utility** | `extract_entities` | Analyze text without writing to DB |
 | | `build_graph` | Backfill extraction on all unprocessed docs |
 
-### MCP Prompts
+**Prompt templates** (from the Claude Desktop prompt menu):
 
-Use these ready-made research workflows from the Claude Desktop prompt menu:
+- `research_topic` — search, read top results, explore concepts, synthesize with citations
+- `analyze_document` — read doc, extract entities, find related docs and experts
+- `explore_entity` — map all connections, linked documents, related concepts
 
-- **`research_topic`** — Searches documents, reads top results, explores related concepts, finds experts, synthesizes with citations
-- **`analyze_document`** — Reads a document, extracts entities, finds related docs and experts
-- **`explore_entity`** — Maps all entity connections, linked documents, and related concepts
+</details>
 
 ---
 
 ## REST API
 
-Full Swagger docs at **`/docs`** when the server is running. All `/api/v1/*` endpoints require an `X-API-Key` header (set `OMNIGRAPH_API_KEY` in `.env`; leave empty to disable auth in dev).
+Full interactive docs at **`/docs`** when the server is running.
+
+Auth: `X-API-Key` header — set `OMNIGRAPH_API_KEY` in `.env` (leave empty to disable in dev).
 
 <details>
-<summary><strong>View all endpoints</strong></summary>
-
+<summary><strong>All endpoints</strong></summary>
 <br/>
 
-**Health & Auth**
 | Method | Path | Description |
 |--------|------|-------------|
-| `GET` | `/health` | DB ping, capability flags |
-| `POST` | `/api/v1/auth/login` | Resolve username → `user_id` + roles |
-
-**Documents**
-| Method | Path | Description |
-|--------|------|-------------|
+| `GET` | `/health` | DB ping + capability flags |
+| `POST` | `/api/v1/auth/login` | Resolve username → user_id + roles |
 | `POST` | `/api/v1/documents/ingest` | Ingest plain text |
 | `POST` | `/api/v1/documents/upload` | Upload PDF / DOCX / TXT |
 | `POST` | `/api/v1/documents/ingest-url` | Fetch a URL and ingest |
 | `GET` | `/api/v1/documents` | Paginated list with filters |
 | `GET` | `/api/v1/documents/{id}` | Full document detail |
 | `DELETE` | `/api/v1/documents/{id}` | Soft-archive |
-
-**Search & Chat**
-| Method | Path | Description |
-|--------|------|-------------|
 | `POST` | `/api/v1/search` | hybrid / fulltext / semantic / graph |
 | `POST` | `/api/v1/chat` | Ask the Claude agent, get cited answer |
-
-**Graph**
-| Method | Path | Description |
-|--------|------|-------------|
 | `GET` | `/api/v1/graph/stats` | Entity / relation / concept counts |
 | `GET` | `/api/v1/graph/entities` | Browse entities |
 | `GET` | `/api/v1/graph/entities/{id}/neighborhood` | N-hop traversal |
@@ -291,13 +261,11 @@ Full Swagger docs at **`/docs`** when the server is running. All `/api/v1/*` end
 
 </details>
 
-### Usage examples
-
 ```bash
-# Upload a PDF — text extracted automatically, entities extracted by Claude
+# Upload a PDF
 curl -X POST http://localhost:8000/api/v1/documents/upload \
   -H "X-API-Key: changeme" \
-  -F "file=@research.pdf" -F "uploaded_by=1" -F "source_type=research_paper"
+  -F "file=@report.pdf" -F "uploaded_by=1" -F "source_type=research_paper"
 
 # Hybrid search
 curl -X POST http://localhost:8000/api/v1/search \
@@ -312,55 +280,16 @@ curl -X POST http://localhost:8000/api/v1/chat \
 
 ---
 
-## Python SDK
+## Database design
 
-```python
-from omnigraph import DatabaseConnection, DocumentIngester
-from omnigraph import EntityRelationExtractor, SemanticQueryEngine, get_anthropic_agent
-
-db = DatabaseConnection()  # reads all config from env vars
-db.connect()
-
-# 1. Ingest — deduplicates, embeds, and extracts automatically
-ingester = DocumentIngester(db)
-doc_id = ingester.ingest_document(
-    title="Kubernetes in Production",
-    source_type="technical_doc",
-    content="Kubernetes orchestrates Docker containers across clusters...",
-    uploaded_by=1,
-    sensitivity_level="internal",
-)
-
-# 2. Extract entities and relationships with Claude Haiku
-extractor = EntityRelationExtractor(db)
-result = extractor.process_document(doc_id)
-# result["entities"]      → [{name, entity_type, confidence, mention_count}]
-# result["concepts"]      → [{name, domain, relevance_score}]
-# result["relationships"] → [{source, target, relation_type, strength}]
-
-# 3. Hybrid search — RBAC-filtered automatically
-engine = SemanticQueryEngine(db, user_id=1)
-hits = engine.search("container orchestration", strategy="hybrid", limit=5)
-
-# 4. Conversational agent with citations
-agent = get_anthropic_agent(db, user_id=1)
-response = agent.run("Who are the leading experts on Kubernetes in this org?")
-print(response["answer"])    # Answer with [doc_id=X] citations
-print(response["citations"]) # [{document_id, title, source_type}]
-```
-
----
-
-## Database Design
-
-19 tables in the `omnigraph` PostgreSQL schema, organized into five layers:
+19 tables organized in five layers:
 
 ```
 Identity & Access   roles · users · user_roles · access_policies
 Content             documents · document_versions · taxonomy · tags · document_tags
 Knowledge Graph     entities · relations · concepts · concept_hierarchy
                     entity_concepts · document_entities · document_concepts
-Semantic Layer      embeddings  ← polymorphic: covers docs, entities, and concepts
+Semantic Layer      embeddings  (polymorphic across docs, entities, concepts)
 Observability       query_logs · audit_logs
 ```
 
@@ -368,136 +297,35 @@ Observability       query_logs · audit_logs
 <img src="./database-schema.jpeg" alt="OmniGraph ER diagram" width="860"/>
 </div>
 
-**Key design decisions:**
-
-| Decision | Rationale |
-|----------|-----------|
-| **Polymorphic embeddings** | One `embeddings` table spans documents, entities, and concepts via `(source_type, source_id)` — uniform semantic search across all node types |
-| **Directed relations with provenance** | Every `relations` row stores `source_document_id` — every edge is auditable back to the document that generated it |
-| **Row-level sensitivity enforcement** | `documents.sensitivity_level` is re-checked at read time by `AccessControlManager` — not just at write time |
-| **Shortest-path BFS in SQL** | `sp_shortest_path()` implemented as a recursive-CTE PostgreSQL function — no application-side graph library needed |
-| **SHA-256 deduplication** | Content hash stored on write; duplicate detection is a single indexed lookup with zero application logic |
+| Decision | Why |
+|----------|-----|
+| Polymorphic `embeddings` table | One table spans docs, entities, and concepts via `(source_type, source_id)` — uniform semantic search everywhere |
+| Directed relations with provenance | Every `relations` row stores `source_document_id` — every edge is auditable |
+| Row-level sensitivity enforcement | `sensitivity_level` re-checked at read time, not just write time |
+| Shortest-path BFS in SQL | Recursive-CTE PostgreSQL function — no application-side graph library |
+| SHA-256 deduplication | Content hash on write; duplicate detection is a single indexed lookup |
 
 ---
 
-## Search Strategies
+## Search strategies
 
 | Strategy | Mechanism | Best for |
 |----------|-----------|----------|
-| `fulltext` | PostgreSQL `tsvector` / `tsquery`, GIN-indexed | Exact keywords, acronyms, IDs |
-| `semantic` | Voyage AI `voyage-3` → pgvector cosine distance | Natural-language questions, synonyms |
-| `graph` | Entity → relation → entity → document traversal | "What else connects to X?" |
-| `hybrid` ✦ | Weighted blend `{fulltext: 1.0, semantic: 1.2, graph: 0.8}` | Production default |
-
-Every result is post-filtered through RBAC — users only receive documents they have `read` access to.
-
----
-
-## Engineering Practices
-
-- **LLM-first, never LLM-only** — Claude extraction handles open-ended entities; keyword lists run in parallel to guarantee well-known tech terms are always captured
-- **Idempotent by default** — SHA-256 dedup, `ON CONFLICT` upserts on all graph writes, stable embedding keys mean the pipeline is safe to re-run at any time
-- **SQL as the contract** — FTS tsvector maintenance, taxonomy level computation, and audit log emission are enforced by triggers — not ad-hoc application code
-- **Graceful degradation** — Embedding failures never roll back document writes; LLM extraction failures fall back to keyword mode; full-text search is always available
-- **Provenance everywhere** — Every extracted relation stores `source_document_id`; every search query is timed and logged to `query_logs`
-- **Separation of concerns** — Retrieval, RBAC, extraction, and agent orchestration are four independent modules that compose without coupling
-
----
-
-## Tech Stack
-
-<div align="center">
-
-<table>
-<tr>
-<td align="center" width="100">
-<img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-original.svg" width="48" height="48" alt="Python"/><br/><b>Python</b>
-</td>
-<td align="center" width="100">
-<img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/postgresql/postgresql-original.svg" width="48" height="48" alt="PostgreSQL"/><br/><b>PostgreSQL</b>
-</td>
-<td align="center" width="100">
-<img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/fastapi/fastapi-original.svg" width="48" height="48" alt="FastAPI"/><br/><b>FastAPI</b>
-</td>
-<td align="center" width="100">
-<img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/docker/docker-original.svg" width="48" height="48" alt="Docker"/><br/><b>Docker</b>
-</td>
-<td align="center" width="100">
-<picture>
-<source media="(prefers-color-scheme: dark)" srcset="https://cdn.simpleicons.org/anthropic/white"/>
-<img src="https://upload.wikimedia.org/wikipedia/commons/7/78/Anthropic_logo.svg" width="48" height="48" alt="Anthropic"/>
-</picture>
-<br/><b>Claude AI</b>
-</td>
-</tr>
-</table>
-
-</div>
-
-| Layer | Technology |
-|:------|:-----------|
-| Language | Python 3.11+ |
-| REST API | FastAPI + Uvicorn |
-| Database | PostgreSQL 16 + pgvector |
-| Embeddings | Voyage AI `voyage-3` (1024-dim cosine) |
-| LLM Agent | Anthropic Claude (tool-use + streaming) |
-| NLP Extraction | `claude-haiku-4-5` + keyword/regex fallback |
-| File Parsing | pdfminer.six · python-docx · httpx + BeautifulSoup4 |
-| MCP | Model Context Protocol SDK (`mcp>=1.0`) |
-| Deployment | Docker + docker-compose |
-
----
-
-## Project Structure
-
-```
-Omni-Graph/
-│
-├── mcp_server/
-│   └── server.py                 ← MCP server: 13 tools, 3 resources, 3 prompts
-│
-├── api/
-│   ├── main.py                   ← FastAPI app: all 13 REST endpoints
-│   ├── file_parser.py            ← PDF / DOCX / URL extraction
-│   ├── models.py                 ← Pydantic schemas
-│   ├── auth.py                   ← API-key middleware
-│   └── dependencies.py           ← DB dependency injection
-│
-├── omnigraph/
-│   ├── ingestion_pipeline.py     ← Normalize · deduplicate · version · embed
-│   ├── entity_relation_extractor.py  ← Claude NLP + keyword fallback
-│   ├── graph_builder.py          ← Entity/relation CRUD · auto-backfill
-│   ├── semantic_query_engine.py  ← Fulltext / vector / graph / hybrid search
-│   ├── access_control_audit.py   ← RBAC · sensitivity · audit logging
-│   ├── agentic_rag.py            ← Claude tool-use agent
-│   ├── embedder.py               ← Voyage AI wrapper
-│   └── console_app.py            ← ANSI terminal UI
-│
-├── sql/
-│   ├── schema.sql                ← 19 tables, constraints, indexes
-│   ├── procedures_triggers.sql   ← 6 stored procedures + 5 triggers
-│   ├── sample_data.sql           ← Seed users, roles, documents
-│   └── retrieval.sql             ← Advanced query examples
-│
-├── exec.py                       ← Terminal UI entrypoint
-├── docker-compose.yml
-├── Dockerfile
-├── .env.example
-└── claude_desktop_config.example.json
-```
+| `fulltext` | `tsvector` + `tsquery`, GIN-indexed | Exact keywords, acronyms, IDs |
+| `semantic` | Voyage AI `voyage-3` → pgvector cosine | Natural language, synonyms |
+| `graph` | Entity → relation → document traversal | "What else connects to X?" |
+| `hybrid` | Weighted blend `{fulltext: 1.0, semantic: 1.2, graph: 0.8}` | Production default |
 
 ---
 
 ## Configuration
 
-Copy `.env.example` to `.env` and fill in your values.
-
-| Variable | Default | Required |
-|----------|---------|----------|
-| `ANTHROPIC_API_KEY` | — | ✅ For Claude agent + LLM extraction |
-| `VOYAGE_API_KEY` | — | ✅ For semantic / vector search |
-| `OMNIGRAPH_API_KEY` | *(empty — open)* | For REST API auth |
-| `OMNIGRAPH_DB_HOST` | `localhost` | For non-Docker deployments |
+| Variable | Default | Notes |
+|----------|---------|-------|
+| `ANTHROPIC_API_KEY` | — | Required for Claude agent + LLM extraction |
+| `VOYAGE_API_KEY` | — | Required for semantic / vector search |
+| `OMNIGRAPH_API_KEY` | *(empty)* | REST API auth; empty = open in dev |
+| `OMNIGRAPH_DB_HOST` | `localhost` | Use container name in Docker |
 | `OMNIGRAPH_DB_PORT` | `5432` | |
 | `OMNIGRAPH_DB_NAME` | `omnigraph` | |
 | `OMNIGRAPH_DB_USER` | `postgres` | |
@@ -506,29 +334,33 @@ Copy `.env.example` to `.env` and fill in your values.
 
 ---
 
-## Contributing
+## Tech stack
 
-Contributions are welcome! To get started:
-
-1. Fork the repo and create a feature branch from `main`
-2. Run the local setup above and verify the existing functionality works
-3. Make your changes — keep PRs focused on a single concern
-4. Open a pull request with a clear description of what you changed and why
-
-**Good first issues:** improving test coverage, adding new MCP tools, supporting additional file formats (e.g. PPTX, CSV), or writing a frontend UI.
+![Python](https://img.shields.io/badge/Python_3.11-0d1117?style=flat-square&logo=python&logoColor=3776AB)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL_16-0d1117?style=flat-square&logo=postgresql&logoColor=4169E1)
+![pgvector](https://img.shields.io/badge/pgvector-0d1117?style=flat-square&logo=postgresql&logoColor=6366F1)
+![FastAPI](https://img.shields.io/badge/FastAPI-0d1117?style=flat-square&logo=fastapi&logoColor=009688)
+![Uvicorn](https://img.shields.io/badge/Uvicorn-0d1117?style=flat-square&logo=gunicorn&logoColor=499848)
+![Docker](https://img.shields.io/badge/Docker_Compose-0d1117?style=flat-square&logo=docker&logoColor=2496ED)
+![Anthropic](https://img.shields.io/badge/Claude_Haiku-0d1117?style=flat-square&logo=anthropic&logoColor=D4A574)
+![Voyage AI](https://img.shields.io/badge/Voyage_AI-0d1117?style=flat-square&logo=openai&logoColor=A78BFA)
+![MCP](https://img.shields.io/badge/Model_Context_Protocol-0d1117?style=flat-square&logo=anthropic&logoColor=8B5CF6)
+![pdfminer](https://img.shields.io/badge/pdfminer.six-0d1117?style=flat-square&logo=adobeacrobatreader&logoColor=EC1C24)
+![python-docx](https://img.shields.io/badge/python--docx-0d1117?style=flat-square&logo=microsoftword&logoColor=2B579A)
+![BeautifulSoup](https://img.shields.io/badge/BeautifulSoup4-0d1117?style=flat-square&logo=html5&logoColor=E34F26)
 
 ---
 
 ## License
 
-MIT — see [LICENSE](LICENSE). Use freely, attribution appreciated.
+MIT — see [LICENSE](LICENSE).
 
 ---
 
 <div align="center">
 
-Built with [Anthropic Claude](https://anthropic.com) · [pgvector](https://github.com/pgvector/pgvector) · [FastAPI](https://fastapi.tiangolo.com) · [Model Context Protocol](https://modelcontextprotocol.io)
+Built with [Claude AI](https://anthropic.com) · [pgvector](https://github.com/pgvector/pgvector) · [FastAPI](https://fastapi.tiangolo.com) · [Model Context Protocol](https://modelcontextprotocol.io)
 
-⭐ **Star this repo** if you find it useful!
+⭐ **Star this repo** if OmniGraph saves you time!
 
 </div>
