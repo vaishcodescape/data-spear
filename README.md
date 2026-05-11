@@ -1,174 +1,130 @@
 <div align="center">
 
-# OmniGraph
+<br/>
 
-### Enterprise Knowledge Graph & Agentic RAG System — Fully Automated & API-First
+<h1>🕸️ OmniGraph</h1>
 
-[![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16+-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
-[![Anthropic](https://img.shields.io/badge/Anthropic-Claude-D4A574?style=for-the-badge&logo=anthropic&logoColor=white)](https://www.anthropic.com/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-REST_API-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
-[![MCP](https://img.shields.io/badge/MCP-Server-8B5CF6?style=for-the-badge&logo=anthropic&logoColor=white)](https://modelcontextprotocol.io/)
-[![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://docs.docker.com/compose/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](LICENSE)
+<p><strong>Turn documents into a queryable knowledge graph — powered by Claude AI.</strong></p>
 
-**Ingest documents. Extract knowledge graphs. Query with AI agents.**
-
-OmniGraph ingests documents from text, files (PDF / DOCX), or URLs; extracts entities, concepts, and relationships using **Claude-powered NLP**; stores everything in a queryable graph; and exposes retrieval through a hybrid search engine (full-text + vector + graph traversal) fronted by an Anthropic tool-use agent.
-
-Deploy in one command with Docker. Integrate with any client via the REST API. Or run the interactive terminal UI locally.
+<p>
+Ingest PDFs, URLs, and raw text · Extract entities & relationships with LLM-powered NLP ·<br/>
+Search with hybrid full-text + vector + graph retrieval · Chat via an Anthropic AI agent ·<br/>
+Plug directly into Claude Desktop as an MCP server.
+</p>
 
 <br/>
 
-<img src="./database-schema.jpeg" alt="OmniGraph database schema ER diagram" width="800" />
+[![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16+-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-REST_API-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![Anthropic](https://img.shields.io/badge/Anthropic-Claude-D4A574?style=for-the-badge&logo=anthropic&logoColor=white)](https://www.anthropic.com/)
+[![MCP](https://img.shields.io/badge/MCP-Server-8B5CF6?style=for-the-badge&logo=anthropic&logoColor=white)](https://modelcontextprotocol.io/)
+[![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://docs.docker.com/compose/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-22C55E?style=for-the-badge)](LICENSE)
+
+<br/>
+
+<table>
+  <tr>
+    <td align="center"><h2>19</h2><sub>Database Tables</sub></td>
+    <td align="center"><h2>13</h2><sub>MCP Tools</sub></td>
+    <td align="center"><h2>4</h2><sub>Search Strategies</sub></td>
+    <td align="center"><h2>1024</h2><sub>Vector Dimensions</sub></td>
+    <td align="center"><h2>6</h2><sub>Stored Procedures</sub></td>
+    <td align="center"><h2>3,500+</h2><sub>Lines of Python</sub></td>
+  </tr>
+</table>
+
+<br/>
 
 </div>
 
 ---
 
-## What's New
+## What is OmniGraph?
 
-- **MCP Server** — Native Model Context Protocol server: plug OmniGraph directly into Claude Desktop as 13 tools, 3 resources, and 3 reusable prompts — no REST calls needed
-- **REST API** — Full FastAPI layer covering document ingest, search, Claude agent chat, and graph management
-- **File ingestion** — Upload PDF, DOCX, or TXT files; fetch and ingest any public URL automatically
-- **Claude-powered NLP** — Entity/concept/relationship extraction upgraded from static keyword lists to `claude-haiku-4-5` LLM extraction (keywords merged as fallback)
-- **Docker** — One-command deployment: `docker compose up` — pgvector + API, schema auto-initialized
-- **Auto graph building** — Every ingested document triggers entity extraction; `POST /api/v1/graph/build` backfills any gaps
+OmniGraph is an **enterprise-grade knowledge graph platform** that transforms unstructured documents into a structured, searchable, and AI-queryable graph. Upload a PDF, paste a URL, or POST raw text — OmniGraph extracts every entity, concept, and relationship using Claude AI, stores them in a relational graph on PostgreSQL + pgvector, and makes everything instantly queryable through four search modes and a conversational AI agent.
 
----
+It ships three interfaces out of the box:
 
-## Highlights
-
-- **Hybrid retrieval engine** — Postgres full-text (`tsvector` + GIN), 1024-dim Voyage AI vector similarity, and graph traversal — unified behind a single weighted ranker
-- **Agentic RAG** — Anthropic Claude agent with a native tool-use loop exposing five RBAC-gated retrieval tools (`hybrid_search`, `find_experts`, `get_entity_documents`, `find_related_concepts`, `get_document_content`)
-- **Relational knowledge graph** — 19-table PostgreSQL schema: documents, entities, concepts, relations, taxonomies, user/role access policies
-- **Deterministic ingestion** — Text normalization → SHA-256 deduplication → versioned writes → embedding via UPSERT on `(source_type, source_id, model_name)`
-- **Enterprise security** — Row-level sensitivity (`public / internal / confidential / restricted`), RBAC enforced at read time, full audit trail
-- **Database-first design** — 6 stored procedures and 5 triggers enforce invariants in SQL; shortest-path BFS implemented as a recursive-CTE PostgreSQL function
+| Interface | Best for |
+|-----------|----------|
+| **MCP Server** | Native Claude Desktop integration — Claude uses OmniGraph tools directly |
+| **REST API** | Any client, any language — full Swagger docs at `/docs` |
+| **Terminal UI** | Local exploration, demos, and development |
 
 ---
 
-## Tech Stack
+## Features
 
 <table>
 <tr>
-<td align="center" width="96">
-<img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-original.svg" width="48" height="48" alt="Python" />
-<br/><b>Python</b>
+<td width="50%">
+
+### 🔍 Hybrid Search Engine
+Four retrieval strategies unified behind a single weighted ranker. Full-text (`tsvector` + GIN), 1024-dim semantic vectors (Voyage AI), and entity-graph traversal — blended automatically in hybrid mode.
+
 </td>
-<td align="center" width="96">
-<img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/postgresql/postgresql-original.svg" width="48" height="48" alt="PostgreSQL" />
-<br/><b>PostgreSQL</b>
+<td width="50%">
+
+### 🤖 Agentic RAG
+An Anthropic Claude agent with a native tool-use loop. It searches, reads, explores the graph, finds experts, and cites every factual claim with a `[doc_id=X]` reference — automatically.
+
 </td>
-<td align="center" width="96">
-<picture>
-<source media="(prefers-color-scheme: dark)" srcset="https://cdn.simpleicons.org/sqlalchemy/white" />
-<img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/sqlalchemy/sqlalchemy-original.svg" width="48" height="48" alt="pgvector" />
-</picture>
-<br/><b>pgvector</b>
+</tr>
+<tr>
+<td>
+
+### 🧠 LLM-Powered NLP Extraction
+`claude-haiku-4-5` extracts entities, concepts, and typed relationships from any text. Keyword lists run in parallel as a safety net — nothing slips through.
+
 </td>
-<td align="center" width="96">
-<picture>
-<source media="(prefers-color-scheme: dark)" srcset="https://cdn.simpleicons.org/anthropic/white" />
-<img src="https://upload.wikimedia.org/wikipedia/commons/7/78/Anthropic_logo.svg" width="48" height="48" alt="Anthropic" />
-</picture>
-<br/><b>Claude AI</b>
+<td>
+
+### 🔌 Native MCP Server
+13 tools, 3 resources, and 3 prompt templates — plug OmniGraph into Claude Desktop in 60 seconds. Claude can ingest, search, and reason over your knowledge graph without writing a line of code.
+
+</td>
+</tr>
+<tr>
+<td>
+
+### 🏢 Enterprise Security Model
+Role-based access control enforced at read time (not just write time) with four sensitivity tiers. Every query is post-filtered, every sensitive access is logged to an immutable audit trail.
+
+</td>
+<td>
+
+### ⚡ One-Command Deploy
+`docker compose up` — PostgreSQL + pgvector + the API server, schema auto-initialized from SQL files. No manual setup, no migration scripts.
+
 </td>
 </tr>
 </table>
 
-| Layer | Technology | Purpose |
-|:---|:---|:---|
-| **Language** | Python 3.11+ | Core application logic |
-| **REST API** | FastAPI + Uvicorn | HTTP layer, file upload, SSE |
-| **Database** | PostgreSQL 16+ | Relational storage, FTS (`tsvector` + GIN indexes) |
-| **Vector Store** | pgvector (1024-dim, cosine) | Semantic similarity search |
-| **Embeddings** | Voyage AI (`voyage-3`) | Document & entity embedding generation |
-| **LLM Agent** | Anthropic Claude (tool-use + streaming) | Agentic RAG with 5 retrieval tools |
-| **NLP Extraction** | `claude-haiku-4-5` + keyword fallback | Entity, concept, relationship extraction |
-| **File Parsing** | pdfminer.six · python-docx · httpx + BeautifulSoup4 | PDF / DOCX / URL text extraction |
-| **MCP Server** | Model Context Protocol (mcp SDK) | Native Claude Desktop integration |
-| **Deployment** | Docker + docker-compose | One-command full-stack deployment |
-| **Terminal UI** | ANSI console | Interactive TUI (still available) |
-
 ---
 
-## Architecture
+## Quick Start
 
-```text
- ┌─────────────────────────────────────────────────────────────────┐
- │                  Clients (API / Browser / CLI)                  │
- └─────────────────────────────┬───────────────────────────────────┘
-                               │
- ┌─────────────────────────────▼───────────────────────────────────┐
- │                     FastAPI REST API  :8000                     │
- │  /ingest  /upload  /ingest-url  /search  /chat  /graph/*        │
- │                  X-API-Key authentication                       │
- └───┬──────────────┬─────────────────────────────┬───────────────┘
-     │              │                             │
-     ▼              ▼                             ▼
-┌─────────┐  ┌────────────┐              ┌─────────────────┐
-│Ingestion│  │ Agentic RAG│              │  Graph / Search │
-│Pipeline │  │(Claude agent│             │     Engine      │
-└────┬────┘  └─────┬──────┘             └────────┬────────┘
-     │             │                             │
-     ▼             ▼                             ▼
-┌───────────────────────────────────────────────────────────┐
-│            Claude-Powered Entity Extractor                │
-│   claude-haiku-4-5  +  keyword/regex fallback             │
-└───────────────────────────────────────────────────────────┘
-                               │
-                               ▼
-┌───────────────────────────────────────────────────────────┐
-│                PostgreSQL  —  schema: omnigraph            │
-│  documents · entities · concepts · relations · embeddings  │
-│  roles · access_policies · audit_logs · query_logs         │
-└───────────────────────────────────────────────────────────┘
-```
-
----
-
-## Data Flow
-
-```text
-Input (text / PDF / DOCX / URL)
-  → parse & normalize (strip control chars, collapse whitespace)
-  → SHA-256 content hash → dedupe probe
-      ├─ hit  → insert new row in document_versions
-      └─ miss → INSERT into documents
-              → Voyage AI embed → upsert into embeddings (pgvector)
-              → Claude Haiku NLP extraction:
-                  ├─ entities       → entities + document_entities
-                  ├─ concepts       → concepts + document_concepts
-                  └─ relationships  → relations (entity → entity edges)
-                  (keyword/regex layer merges in any missed known terms)
-```
-
-All stages are idempotent: hash-based dedup, `ON CONFLICT` upserts on graph edges, stable embedding keys `(source_type, source_id, model_name)`.
-
----
-
-## Quick Start — Docker (recommended)
+### Docker (recommended)
 
 ```bash
-# 1. Clone and configure
 git clone https://github.com/vaishcodescape/Omni-Graph.git
 cd Omni-Graph
+
 cp .env.example .env
-# Edit .env — set ANTHROPIC_API_KEY and VOYAGE_API_KEY
+# Open .env and add your ANTHROPIC_API_KEY and VOYAGE_API_KEY
 
-# 2. Start everything (postgres + API)
 docker compose up
-
-# API is live at   http://localhost:8000
-# Swagger docs at  http://localhost:8000/docs
 ```
 
-PostgreSQL schema, stored procedures, and sample data are initialized automatically on first startup.
+That's it. The API is live at **http://localhost:8000** and interactive Swagger docs are at **http://localhost:8000/docs**.
 
----
+PostgreSQL schema, stored procedures, and seed data initialize automatically on first run.
 
-## Quick Start — Local
+<details>
+<summary><strong>Local setup (without Docker)</strong></summary>
+<br/>
 
 ```bash
 # 1. Create and seed the database
@@ -177,34 +133,73 @@ psql -d omnigraph -f sql/schema.sql
 psql -d omnigraph -f sql/sample_data.sql
 psql -d omnigraph -f sql/procedures_triggers.sql
 
-# 2. Install dependencies
+# 2. Install Python dependencies
 pip install -r requirements.txt
 
-# 3. Configure
-cp .env.example .env    # fill in your values
+# 3. Configure environment
+cp .env.example .env    # then fill in your API keys
 
-# 4a. Start the REST API
+# 4a. Run the REST API
 uvicorn api.main:app --reload --port 8000
 
-# 4b. Or use the terminal UI
+# 4b. Or run the terminal UI
 python exec.py
+```
+
+</details>
+
+---
+
+## How It Works
+
+Every document goes through a five-stage automated pipeline:
+
+```
+ Input (text / PDF / DOCX / URL)
+        │
+        ▼
+ ┌─────────────────────────────────────────────────┐
+ │  1. PARSE & NORMALIZE                           │
+ │     Strip control chars · collapse whitespace   │
+ └──────────────────────────┬──────────────────────┘
+                            │
+                            ▼
+ ┌─────────────────────────────────────────────────┐
+ │  2. DEDUPLICATE                                 │
+ │     SHA-256 hash → skip if seen · version if   │
+ │     content changed · always idempotent         │
+ └──────────────────────────┬──────────────────────┘
+                            │
+                            ▼
+ ┌─────────────────────────────────────────────────┐
+ │  3. EMBED                                       │
+ │     Voyage AI voyage-3 → 1024-dim vector →     │
+ │     upsert into pgvector on (type, id, model)  │
+ └──────────────────────────┬──────────────────────┘
+                            │
+                            ▼
+ ┌─────────────────────────────────────────────────┐
+ │  4. EXTRACT  (Claude Haiku + keyword fallback)  │
+ │     Entities → document_entities               │
+ │     Concepts → document_concepts               │
+ │     Relations → directed graph edges           │
+ └──────────────────────────┬──────────────────────┘
+                            │
+                            ▼
+ ┌─────────────────────────────────────────────────┐
+ │  5. QUERY-READY                                 │
+ │     Full-text · Semantic · Graph · Hybrid       │
+ │     All results RBAC-filtered at read time      │
+ └─────────────────────────────────────────────────┘
 ```
 
 ---
 
-## MCP Server — Claude Desktop Integration
+## MCP Server — Claude Desktop in 60 Seconds
 
-OmniGraph ships as a first-class **Model Context Protocol server**. Add it to Claude Desktop and Claude can directly search the knowledge graph, ingest documents, explore the entity graph, and run research workflows — without any manual API calls.
+Add OmniGraph to your Claude Desktop config and Claude gains direct access to your knowledge graph:
 
-### Setup (Claude Desktop)
-
-1. Copy `claude_desktop_config.example.json` into your Claude Desktop config:
-   - **Mac / Linux:** `~/.claude/claude_desktop_config.json`
-   - **Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
-
-2. Update the `cwd` field to your absolute path and fill in your API keys.
-
-3. Restart Claude Desktop — OmniGraph will appear in the tools panel.
+**`~/.claude/claude_desktop_config.json`** (Mac/Linux) or **`%APPDATA%\Claude\claude_desktop_config.json`** (Windows):
 
 ```json
 {
@@ -225,306 +220,315 @@ OmniGraph ships as a first-class **Model Context Protocol server**. Add it to Cl
 }
 ```
 
-### MCP Tools (13)
+Restart Claude Desktop — OmniGraph appears in the tools panel. A pre-filled example is in [`claude_desktop_config.example.json`](claude_desktop_config.example.json).
 
-| Tool | Description |
-|------|-------------|
-| `search` | Hybrid / fulltext / semantic / graph search across all documents |
-| `read_document` | Fetch full document content by ID |
-| `find_experts` | Domain experts ranked by concept contribution |
-| `get_entity_documents` | Documents linked to a named entity |
-| `find_related_concepts` | Concept hierarchy + co-occurrence |
-| `ingest_document` | Ingest text into the knowledge graph |
-| `ingest_url` | Fetch a URL and ingest its content |
-| `graph_stats` | Entity / relation / concept / document counts |
-| `list_entities` | Browse entities with optional type filter |
-| `entity_neighborhood` | N-hop entity graph traversal |
-| `list_documents` | Paginated document listing |
-| `extract_entities` | Run Claude NLP extraction on arbitrary text (no DB write) |
-| `build_graph` | Backfill extraction for all unprocessed documents |
+### MCP Tools
 
-### MCP Resources (3)
+| Category | Tool | What it does |
+|----------|------|--------------|
+| **Search** | `search` | Hybrid / fulltext / semantic / graph search |
+| | `read_document` | Fetch full document text by ID |
+| | `find_experts` | Domain experts ranked by concept contribution |
+| | `get_entity_documents` | All documents linked to a named entity |
+| | `find_related_concepts` | Concept hierarchy + co-occurrence graph |
+| **Ingest** | `ingest_document` | Add text to the knowledge graph |
+| | `ingest_url` | Fetch a URL and ingest its content |
+| **Explore** | `graph_stats` | Live entity / relation / concept counts |
+| | `list_entities` | Browse entities with optional type filter |
+| | `entity_neighborhood` | N-hop entity graph traversal |
+| | `list_documents` | Paginated document listing |
+| **Utility** | `extract_entities` | Analyze text without writing to DB |
+| | `build_graph` | Backfill extraction on all unprocessed docs |
 
-| URI | Description |
-|-----|-------------|
-| `omnigraph://graph/stats` | Live knowledge graph statistics |
-| `omnigraph://documents/recent` | 20 most recently ingested documents |
-| `omnigraph://entities/top` | 50 highest-confidence entities |
+### MCP Prompts
 
-### MCP Prompts (3)
+Use these ready-made research workflows from the Claude Desktop prompt menu:
 
-| Prompt | Arguments | What it does |
-|--------|-----------|--------------|
-| `research_topic` | `topic`, `depth` | Deep-research any topic: search → read → concepts → experts → synthesize |
-| `analyze_document` | `document_id` | Full document analysis: content → entities → related docs → experts |
-| `explore_entity` | `entity_name` | Map all entity connections: neighborhood → documents → concepts |
-
-### Run standalone (debug)
-
-```bash
-python -m mcp_server.server
-```
+- **`research_topic`** — Searches documents, reads top results, explores related concepts, finds experts, synthesizes with citations
+- **`analyze_document`** — Reads a document, extracts entities, finds related docs and experts
+- **`explore_entity`** — Maps all entity connections, linked documents, and related concepts
 
 ---
 
-## REST API Reference
+## REST API
 
-All `/api/v1/*` endpoints require an `X-API-Key` header matching `OMNIGRAPH_API_KEY`.
-Leave that env var empty to disable auth in development.
+Full Swagger docs at **`/docs`** when the server is running. All `/api/v1/*` endpoints require an `X-API-Key` header (set `OMNIGRAPH_API_KEY` in `.env`; leave empty to disable auth in dev).
 
-Interactive docs always available at [`/docs`](http://localhost:8000/docs).
+<details>
+<summary><strong>View all endpoints</strong></summary>
 
-### Health
+<br/>
 
+**Health & Auth**
 | Method | Path | Description |
 |--------|------|-------------|
-| `GET` | `/health` | DB ping, capability flags (LLM, semantic search) |
-
-### Auth
-
-| Method | Path | Description |
-|--------|------|-------------|
+| `GET` | `/health` | DB ping, capability flags |
 | `POST` | `/api/v1/auth/login` | Resolve username → `user_id` + roles |
 
-```bash
-curl -X POST http://localhost:8000/api/v1/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"username": "chen.wei"}'
-# → {"user_id": 2, "username": "chen.wei", "roles": ["analyst"]}
-```
-
-### Documents
-
+**Documents**
 | Method | Path | Description |
 |--------|------|-------------|
 | `POST` | `/api/v1/documents/ingest` | Ingest plain text |
 | `POST` | `/api/v1/documents/upload` | Upload PDF / DOCX / TXT |
-| `POST` | `/api/v1/documents/ingest-url` | Fetch a URL and ingest its text |
-| `GET` | `/api/v1/documents` | Paginated list (filterable by type / sensitivity) |
-| `GET` | `/api/v1/documents/{id}` | Full detail including content |
+| `POST` | `/api/v1/documents/ingest-url` | Fetch a URL and ingest |
+| `GET` | `/api/v1/documents` | Paginated list with filters |
+| `GET` | `/api/v1/documents/{id}` | Full document detail |
 | `DELETE` | `/api/v1/documents/{id}` | Soft-archive |
 
+**Search & Chat**
+| Method | Path | Description |
+|--------|------|-------------|
+| `POST` | `/api/v1/search` | hybrid / fulltext / semantic / graph |
+| `POST` | `/api/v1/chat` | Ask the Claude agent, get cited answer |
+
+**Graph**
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/api/v1/graph/stats` | Entity / relation / concept counts |
+| `GET` | `/api/v1/graph/entities` | Browse entities |
+| `GET` | `/api/v1/graph/entities/{id}/neighborhood` | N-hop traversal |
+| `POST` | `/api/v1/graph/build` | Backfill all unextracted documents |
+
+</details>
+
+### Usage examples
+
 ```bash
-# Upload a PDF — text extracted automatically
+# Upload a PDF — text extracted automatically, entities extracted by Claude
 curl -X POST http://localhost:8000/api/v1/documents/upload \
   -H "X-API-Key: changeme" \
-  -F "file=@report.pdf" -F "uploaded_by=1" -F "source_type=report"
+  -F "file=@research.pdf" -F "uploaded_by=1" -F "source_type=research_paper"
 
-# Ingest a URL
-curl -X POST http://localhost:8000/api/v1/documents/ingest-url \
+# Hybrid search
+curl -X POST http://localhost:8000/api/v1/search \
   -H "X-API-Key: changeme" -H "Content-Type: application/json" \
-  -d '{"url":"https://example.com/article","uploaded_by":1}'
+  -d '{"query": "federated learning privacy", "strategy": "hybrid", "user_id": 1}'
+
+# Ask the AI agent
+curl -X POST http://localhost:8000/api/v1/chat \
+  -H "X-API-Key: changeme" -H "Content-Type: application/json" \
+  -d '{"message": "Who are the experts on Kubernetes?", "user_id": 1}'
 ```
 
-All ingest endpoints accept `"auto_extract": true` (default) — Claude NLP extraction runs immediately after ingest.
-
-### Search
-
-| Method | Path | Description |
-|--------|------|-------------|
-| `POST` | `/api/v1/search` | Hybrid / fulltext / semantic / graph search |
-
-```json
-POST /api/v1/search
-{"query": "Kubernetes container orchestration", "strategy": "hybrid", "limit": 10, "user_id": 1}
-```
-
-### Chat (Agentic RAG)
-
-| Method | Path | Description |
-|--------|------|-------------|
-| `POST` | `/api/v1/chat` | Ask the Claude agent; returns answer + citations + tools used |
-
-```json
-POST /api/v1/chat
-{"message": "Who are the experts on federated learning?", "user_id": 1}
-```
-
-### Graph
-
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/api/v1/graph/stats` | Total entities, relations, concepts, documents |
-| `GET` | `/api/v1/graph/entities` | Paginated entity list with optional type filter |
-| `GET` | `/api/v1/graph/entities/{id}/neighborhood` | N-hop neighborhood (depth 1–4) |
-| `POST` | `/api/v1/graph/build` | Backfill extraction for all unprocessed documents |
-
 ---
 
-## Retrieval Strategies
-
-| Strategy | Mechanism | Best for |
-|---|---|---|
-| `fulltext` | PostgreSQL `tsvector` / `tsquery`, GIN-indexed | Exact keywords, acronyms |
-| `semantic` | Voyage `voyage-3` → pgvector nearest neighbor | Natural-language questions, paraphrases |
-| `graph` | Entity → relation → entity → document traversal | "What else is connected to X?" |
-| `hybrid` (default) | All three, blended `{fulltext: 1.0, semantic: 1.2, graph: 0.8}` | Most production queries |
-
-Every result is post-filtered through RBAC — users only see documents they have `read` access to.
-
----
-
-## Core Modules
-
-| Module | Responsibility |
-|---|---|
-| [`api/main.py`](api/main.py) | FastAPI app — all 13 REST endpoints |
-| [`api/file_parser.py`](api/file_parser.py) | PDF, DOCX, and URL text extraction |
-| [`api/auth.py`](api/auth.py) | X-API-Key middleware |
-| [`omnigraph/ingestion_pipeline.py`](omnigraph/ingestion_pipeline.py) | Normalization, SHA-256 dedup, versioning, batch ingest, embedding |
-| [`omnigraph/entity_relation_extractor.py`](omnigraph/entity_relation_extractor.py) | Claude Haiku LLM extraction + keyword/regex fallback; entity/concept/relation storage |
-| [`omnigraph/graph_builder.py`](omnigraph/graph_builder.py) | Entity/relation CRUD, taxonomy, concept hierarchies, neighborhood traversal, auto-backfill |
-| [`omnigraph/semantic_query_engine.py`](omnigraph/semantic_query_engine.py) | Fulltext, vector, graph, and hybrid search with weighted ranking |
-| [`omnigraph/access_control_audit.py`](omnigraph/access_control_audit.py) | RBAC enforcement, sensitivity checks, query + audit logging |
-| [`omnigraph/agentic_rag.py`](omnigraph/agentic_rag.py) | Anthropic tool-use agent with 5 RBAC-gated retrieval tools |
-| [`omnigraph/embedder.py`](omnigraph/embedder.py) | Voyage AI client wrapper with graceful degradation |
-| [`omnigraph/console_app.py`](omnigraph/console_app.py) | ANSI terminal UI (search, agent, graph exploration) |
-
----
-
-## Database Schema — 19 Tables
-
-All objects live in the `omnigraph` schema. Full DDL in [`sql/schema.sql`](sql/schema.sql).
-
-**Identity & Access**: `roles` · `users` · `user_roles` · `access_policies`
-**Content**: `documents` · `document_versions` · `taxonomy` · `tags` · `document_tags`
-**Knowledge Graph**: `entities` · `relations` · `concepts` · `concept_hierarchy` · `entity_concepts` · `document_entities` · `document_concepts`
-**Semantic Layer**: `embeddings` (polymorphic on `source_type + source_id`, pgvector)
-**Observability**: `query_logs` · `audit_logs`
-
-Key design decisions:
-
-- **Polymorphic embeddings** — One `embeddings` table spans documents, entities, and concepts; enables semantic search across all graph node types uniformly.
-- **Directed relations** — `relations(source_entity_id, target_entity_id, relation_type, strength, source_document_id)` preserves provenance back to the originating document.
-- **Row-level sensitivity** — `documents.sensitivity_level` is the final authority; every retrieval is re-checked at read time.
-- **Shortest-path BFS** — `sp_shortest_path(source_id, target_id)` implemented as a recursive-CTE PostgreSQL function.
-
----
-
-## Programmatic Usage
+## Python SDK
 
 ```python
-from omnigraph import DatabaseConnection, DocumentIngester, SemanticQueryEngine
-from omnigraph import EntityRelationExtractor, get_anthropic_agent
+from omnigraph import DatabaseConnection, DocumentIngester
+from omnigraph import EntityRelationExtractor, SemanticQueryEngine, get_anthropic_agent
 
-db = DatabaseConnection()   # reads all params from env vars
+db = DatabaseConnection()  # reads all config from env vars
 db.connect()
 
-# Ingest text — deduplicates, embeds, auto-extracts entities
+# 1. Ingest — deduplicates, embeds, and extracts automatically
 ingester = DocumentIngester(db)
 doc_id = ingester.ingest_document(
-    title="Container Orchestration Primer",
+    title="Kubernetes in Production",
     source_type="technical_doc",
     content="Kubernetes orchestrates Docker containers across clusters...",
     uploaded_by=1,
     sensitivity_level="internal",
 )
 
-# Extract entities with Claude Haiku (keyword fallback if no API key)
+# 2. Extract entities and relationships with Claude Haiku
 extractor = EntityRelationExtractor(db)
 result = extractor.process_document(doc_id)
-print(result["entities"])      # [{name, entity_type, confidence, ...}]
-print(result["relationships"]) # [{source, target, relation_type, strength}]
+# result["entities"]      → [{name, entity_type, confidence, mention_count}]
+# result["concepts"]      → [{name, domain, relevance_score}]
+# result["relationships"] → [{source, target, relation_type, strength}]
 
-# Hybrid search, RBAC-filtered
+# 3. Hybrid search — RBAC-filtered automatically
 engine = SemanticQueryEngine(db, user_id=1)
 hits = engine.search("container orchestration", strategy="hybrid", limit=5)
 
-# Ask the Claude agent
+# 4. Conversational agent with citations
 agent = get_anthropic_agent(db, user_id=1)
-answer = agent.run("Who are the experts on Kubernetes?")
-print(answer["answer"])
-print(answer["citations"])
+response = agent.run("Who are the leading experts on Kubernetes in this org?")
+print(response["answer"])    # Answer with [doc_id=X] citations
+print(response["citations"]) # [{document_id, title, source_type}]
 ```
 
 ---
 
-## Configuration Reference
+## Database Design
 
-| Env var | Default | Purpose |
-|---|---|---|
-| `OMNIGRAPH_DB_HOST` | `localhost` | PostgreSQL host |
-| `OMNIGRAPH_DB_PORT` | `5432` | PostgreSQL port |
-| `OMNIGRAPH_DB_NAME` | `omnigraph` | Database name |
-| `OMNIGRAPH_DB_USER` | `postgres` | PostgreSQL user |
-| `OMNIGRAPH_DB_PASSWORD` | `postgres` | PostgreSQL password |
-| `ANTHROPIC_API_KEY` | — | Required for Claude agent + LLM entity extraction |
-| `VOYAGE_API_KEY` | — | Required for semantic / vector search |
-| `OMNIGRAPH_API_KEY` | `""` (open) | API key for `X-API-Key` header; leave empty to disable auth |
+19 tables in the `omnigraph` PostgreSQL schema, organized into five layers:
 
-Copy `.env.example` to `.env` and fill in your values.
+```
+Identity & Access   roles · users · user_roles · access_policies
+Content             documents · document_versions · taxonomy · tags · document_tags
+Knowledge Graph     entities · relations · concepts · concept_hierarchy
+                    entity_concepts · document_entities · document_concepts
+Semantic Layer      embeddings  ← polymorphic: covers docs, entities, and concepts
+Observability       query_logs · audit_logs
+```
+
+<div align="center">
+<img src="./database-schema.jpeg" alt="OmniGraph ER diagram" width="860"/>
+</div>
+
+**Key design decisions:**
+
+| Decision | Rationale |
+|----------|-----------|
+| **Polymorphic embeddings** | One `embeddings` table spans documents, entities, and concepts via `(source_type, source_id)` — uniform semantic search across all node types |
+| **Directed relations with provenance** | Every `relations` row stores `source_document_id` — every edge is auditable back to the document that generated it |
+| **Row-level sensitivity enforcement** | `documents.sensitivity_level` is re-checked at read time by `AccessControlManager` — not just at write time |
+| **Shortest-path BFS in SQL** | `sp_shortest_path()` implemented as a recursive-CTE PostgreSQL function — no application-side graph library needed |
+| **SHA-256 deduplication** | Content hash stored on write; duplicate detection is a single indexed lookup with zero application logic |
 
 ---
 
-## Repository Layout
+## Search Strategies
 
-```text
-Omni-Graph/
-├── exec.py                          # Terminal UI entrypoint
-├── requirements.txt
-├── Dockerfile
-├── docker-compose.yml
-├── .env.example
-├── database-schema.jpeg
-├── mcp_server/                      # MCP Server (Claude Desktop)
-│   └── server.py                    # 13 tools, 3 resources, 3 prompts
-├── claude_desktop_config.example.json
-├── api/                             # REST API layer
-│   ├── main.py                      # FastAPI app + all routes
-│   ├── models.py                    # Pydantic request/response schemas
-│   ├── auth.py                      # X-API-Key middleware
-│   ├── dependencies.py              # DB dependency injection
-│   └── file_parser.py               # PDF / DOCX / URL text extraction
-├── omnigraph/                       # Core library
-│   ├── ingestion_pipeline.py        # Ingest, dedup, versioning, embedding
-│   ├── entity_relation_extractor.py # Claude NLP + keyword extraction
-│   ├── graph_builder.py             # Entity/relation CRUD + auto-backfill
-│   ├── semantic_query_engine.py     # Fulltext / vector / graph / hybrid search
-│   ├── access_control_audit.py      # RBAC, audit logging
-│   ├── agentic_rag.py               # Claude tool-use agent
-│   ├── embedder.py                  # Voyage AI wrapper
-│   └── console_app.py               # Terminal UI
-└── sql/
-    ├── schema.sql                   # 19 tables, constraints, indexes
-    ├── sample_data.sql              # Seed roles / users / documents
-    ├── procedures_triggers.sql      # 6 stored procedures + 5 triggers
-    ├── retrieval.sql                # Advanced retrieval queries
-    └── queries.sql                  # CTE / window function examples
-```
+| Strategy | Mechanism | Best for |
+|----------|-----------|----------|
+| `fulltext` | PostgreSQL `tsvector` / `tsquery`, GIN-indexed | Exact keywords, acronyms, IDs |
+| `semantic` | Voyage AI `voyage-3` → pgvector cosine distance | Natural-language questions, synonyms |
+| `graph` | Entity → relation → entity → document traversal | "What else connects to X?" |
+| `hybrid` ✦ | Weighted blend `{fulltext: 1.0, semantic: 1.2, graph: 0.8}` | Production default |
+
+Every result is post-filtered through RBAC — users only receive documents they have `read` access to.
 
 ---
 
 ## Engineering Practices
 
-- **LLM-first, keyword fallback** — Claude extraction handles any entity; keyword lists ensure well-known tech terms are never missed.
-- **Separation of concerns** — Retrieval, access control, and orchestration are distinct modules; the agent composes them.
-- **SQL-as-contract** — FTS maintenance, audit emission, and taxonomy invariants are enforced by triggers and stored procedures.
-- **Idempotent writes** — Hash dedup, `ON CONFLICT` upserts, and stable embedding keys make the pipeline safe to re-run.
-- **Graceful degradation** — Embedding failures don't roll back document writes; LLM failures fall back to keyword extraction; FTS always works.
-- **Provenance** — Every extracted relation stores `source_document_id`; every query is logged to `query_logs`.
+- **LLM-first, never LLM-only** — Claude extraction handles open-ended entities; keyword lists run in parallel to guarantee well-known tech terms are always captured
+- **Idempotent by default** — SHA-256 dedup, `ON CONFLICT` upserts on all graph writes, stable embedding keys mean the pipeline is safe to re-run at any time
+- **SQL as the contract** — FTS tsvector maintenance, taxonomy level computation, and audit log emission are enforced by triggers — not ad-hoc application code
+- **Graceful degradation** — Embedding failures never roll back document writes; LLM extraction failures fall back to keyword mode; full-text search is always available
+- **Provenance everywhere** — Every extracted relation stores `source_document_id`; every search query is timed and logged to `query_logs`
+- **Separation of concerns** — Retrieval, RBAC, extraction, and agent orchestration are four independent modules that compose without coupling
 
 ---
 
-## Sample Seed Users
+## Tech Stack
 
-Seeded by `sample_data.sql`: `agarwal.priya` · `chen.wei` · `johnson.mark` · `martinez.sofia` · `okafor.emeka` · `tanaka.yuki` · `williams.alex` · `kumar.rahul` · `fischer.anna` · `brown.david`
+<div align="center">
+
+<table>
+<tr>
+<td align="center" width="100">
+<img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-original.svg" width="48" height="48" alt="Python"/><br/><b>Python</b>
+</td>
+<td align="center" width="100">
+<img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/postgresql/postgresql-original.svg" width="48" height="48" alt="PostgreSQL"/><br/><b>PostgreSQL</b>
+</td>
+<td align="center" width="100">
+<img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/fastapi/fastapi-original.svg" width="48" height="48" alt="FastAPI"/><br/><b>FastAPI</b>
+</td>
+<td align="center" width="100">
+<img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/docker/docker-original.svg" width="48" height="48" alt="Docker"/><br/><b>Docker</b>
+</td>
+<td align="center" width="100">
+<picture>
+<source media="(prefers-color-scheme: dark)" srcset="https://cdn.simpleicons.org/anthropic/white"/>
+<img src="https://upload.wikimedia.org/wikipedia/commons/7/78/Anthropic_logo.svg" width="48" height="48" alt="Anthropic"/>
+</picture>
+<br/><b>Claude AI</b>
+</td>
+</tr>
+</table>
+
+</div>
+
+| Layer | Technology |
+|:------|:-----------|
+| Language | Python 3.11+ |
+| REST API | FastAPI + Uvicorn |
+| Database | PostgreSQL 16 + pgvector |
+| Embeddings | Voyage AI `voyage-3` (1024-dim cosine) |
+| LLM Agent | Anthropic Claude (tool-use + streaming) |
+| NLP Extraction | `claude-haiku-4-5` + keyword/regex fallback |
+| File Parsing | pdfminer.six · python-docx · httpx + BeautifulSoup4 |
+| MCP | Model Context Protocol SDK (`mcp>=1.0`) |
+| Deployment | Docker + docker-compose |
 
 ---
 
-## Notes
+## Project Structure
 
-- SQL initialization order: `schema.sql` → `sample_data.sql` → `procedures_triggers.sql`. Docker handles this automatically.
-- To grant `view_graph` to the admin role:
-
-```sql
-UPDATE omnigraph.roles
-SET permissions = array_append(permissions, 'view_graph')
-WHERE role_name = 'admin'
-  AND NOT ('view_graph' = ANY(permissions));
 ```
+Omni-Graph/
+│
+├── mcp_server/
+│   └── server.py                 ← MCP server: 13 tools, 3 resources, 3 prompts
+│
+├── api/
+│   ├── main.py                   ← FastAPI app: all 13 REST endpoints
+│   ├── file_parser.py            ← PDF / DOCX / URL extraction
+│   ├── models.py                 ← Pydantic schemas
+│   ├── auth.py                   ← API-key middleware
+│   └── dependencies.py           ← DB dependency injection
+│
+├── omnigraph/
+│   ├── ingestion_pipeline.py     ← Normalize · deduplicate · version · embed
+│   ├── entity_relation_extractor.py  ← Claude NLP + keyword fallback
+│   ├── graph_builder.py          ← Entity/relation CRUD · auto-backfill
+│   ├── semantic_query_engine.py  ← Fulltext / vector / graph / hybrid search
+│   ├── access_control_audit.py   ← RBAC · sensitivity · audit logging
+│   ├── agentic_rag.py            ← Claude tool-use agent
+│   ├── embedder.py               ← Voyage AI wrapper
+│   └── console_app.py            ← ANSI terminal UI
+│
+├── sql/
+│   ├── schema.sql                ← 19 tables, constraints, indexes
+│   ├── procedures_triggers.sql   ← 6 stored procedures + 5 triggers
+│   ├── sample_data.sql           ← Seed users, roles, documents
+│   └── retrieval.sql             ← Advanced query examples
+│
+├── exec.py                       ← Terminal UI entrypoint
+├── docker-compose.yml
+├── Dockerfile
+├── .env.example
+└── claude_desktop_config.example.json
+```
+
+---
+
+## Configuration
+
+Copy `.env.example` to `.env` and fill in your values.
+
+| Variable | Default | Required |
+|----------|---------|----------|
+| `ANTHROPIC_API_KEY` | — | ✅ For Claude agent + LLM extraction |
+| `VOYAGE_API_KEY` | — | ✅ For semantic / vector search |
+| `OMNIGRAPH_API_KEY` | *(empty — open)* | For REST API auth |
+| `OMNIGRAPH_DB_HOST` | `localhost` | For non-Docker deployments |
+| `OMNIGRAPH_DB_PORT` | `5432` | |
+| `OMNIGRAPH_DB_NAME` | `omnigraph` | |
+| `OMNIGRAPH_DB_USER` | `postgres` | |
+| `OMNIGRAPH_DB_PASSWORD` | `postgres` | |
+| `OMNIGRAPH_DEFAULT_USER_ID` | `1` | MCP server RBAC context |
+
+---
+
+## Contributing
+
+Contributions are welcome! To get started:
+
+1. Fork the repo and create a feature branch from `main`
+2. Run the local setup above and verify the existing functionality works
+3. Make your changes — keep PRs focused on a single concern
+4. Open a pull request with a clear description of what you changed and why
+
+**Good first issues:** improving test coverage, adding new MCP tools, supporting additional file formats (e.g. PPTX, CSV), or writing a frontend UI.
 
 ---
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT — see [LICENSE](LICENSE). Use freely, attribution appreciated.
+
+---
+
+<div align="center">
+
+Built with [Anthropic Claude](https://anthropic.com) · [pgvector](https://github.com/pgvector/pgvector) · [FastAPI](https://fastapi.tiangolo.com) · [Model Context Protocol](https://modelcontextprotocol.io)
+
+⭐ **Star this repo** if you find it useful!
+
+</div>
