@@ -1,8 +1,8 @@
 <div align="center">
 
-<h1>🕸️ OmniGraph</h1>
+<h1>OmniGraph</h1>
 
-<p><strong>Turn any document into a queryable knowledge graph — powered by Claude AI.</strong></p>
+<p><strong>Turn any document into a queryable knowledge graph</strong></p>
 
 <p>
 Ingest PDFs, URLs, and raw text &nbsp;·&nbsp; Extract entities &amp; relationships with LLM NLP &nbsp;·&nbsp; Search with hybrid full-text + vector + graph retrieval &nbsp;·&nbsp; Chat via an Anthropic agent &nbsp;·&nbsp; Plug into Claude Desktop via MCP
@@ -334,22 +334,7 @@ Observability       query_logs · audit_logs
 
 ---
 
-## Tech stack
-
-![Python](https://img.shields.io/badge/Python_3.11-0d1117?style=flat-square&logo=python&logoColor=3776AB)
-![PostgreSQL](https://img.shields.io/badge/PostgreSQL_16-0d1117?style=flat-square&logo=postgresql&logoColor=4169E1)
-![pgvector](https://img.shields.io/badge/pgvector-0d1117?style=flat-square&logo=postgresql&logoColor=6366F1)
-![FastAPI](https://img.shields.io/badge/FastAPI-0d1117?style=flat-square&logo=fastapi&logoColor=009688)
-![Uvicorn](https://img.shields.io/badge/Uvicorn-0d1117?style=flat-square&logo=gunicorn&logoColor=499848)
-![Docker](https://img.shields.io/badge/Docker_Compose-0d1117?style=flat-square&logo=docker&logoColor=2496ED)
-![Anthropic](https://img.shields.io/badge/Claude_Haiku-0d1117?style=flat-square&logo=anthropic&logoColor=D4A574)
-![Voyage AI](https://img.shields.io/badge/Voyage_AI-0d1117?style=flat-square&logo=openai&logoColor=A78BFA)
-![MCP](https://img.shields.io/badge/Model_Context_Protocol-0d1117?style=flat-square&logo=anthropic&logoColor=8B5CF6)
-![pdfminer](https://img.shields.io/badge/pdfminer.six-0d1117?style=flat-square&logo=adobeacrobatreader&logoColor=EC1C24)
-![python-docx](https://img.shields.io/badge/python--docx-0d1117?style=flat-square&logo=microsoftword&logoColor=2B579A)
-![BeautifulSoup](https://img.shields.io/badge/BeautifulSoup4-0d1117?style=flat-square&logo=html5&logoColor=E34F26)
-
----
+ 
 
 ## License
 
