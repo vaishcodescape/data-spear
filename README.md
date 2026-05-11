@@ -3,11 +3,18 @@
 <img src="./database-schema.jpeg" alt="OmniGraph" width="860" />
 
 ### AI-Powered Knowledge Graph Platform
+## Tech Stack
 
-[![GitHub stars](https://img.shields.io/github/stars/vaishcodescape/Omni-Graph?style=flat&logo=github)](https://github.com/vaishcodescape/Omni-Graph/stargazers)
-[![License](https://img.shields.io/github/license/vaishcodescape/Omni-Graph?style=flat)](LICENSE)
-[![GitHub issues](https://img.shields.io/github/issues/vaishcodescape/Omni-Graph?style=flat&logo=github)](https://github.com/vaishcodescape/Omni-Graph/issues)
-[![LinkedIn](https://img.shields.io/badge/LinkedIn-555?logo=linkedin)](https://linkedin.com/in/adityavaish)
+<p>
+  <a href="https://www.python.org/"><img src="https://img.shields.io/badge/Python_3.11-14191f?logo=python&logoColor=3776AB" alt="Python" /></a>
+  <a href="https://www.postgresql.org/"><img src="https://img.shields.io/badge/PostgreSQL_16-14191f?logo=postgresql&logoColor=4169E1" alt="PostgreSQL" /></a>
+  <a href="https://github.com/pgvector/pgvector"><img src="https://img.shields.io/badge/pgvector-14191f?logo=postgresql&logoColor=6366F1" alt="pgvector" /></a>
+  <a href="https://fastapi.tiangolo.com/"><img src="https://img.shields.io/badge/FastAPI-14191f?logo=fastapi&logoColor=009688" alt="FastAPI" /></a>
+  <a href="https://docs.docker.com/compose/"><img src="https://img.shields.io/badge/Docker-14191f?logo=docker&logoColor=2496ED" alt="Docker" /></a>
+  <a href="https://www.anthropic.com/"><img src="https://img.shields.io/badge/Claude_AI-14191f?logo=anthropic&logoColor=D4A574" alt="Claude AI" /></a>
+  <a href="https://www.voyageai.com/"><img src="https://img.shields.io/badge/Voyage_AI-14191f?logo=voyager&logoColor=A78BFA" alt="Voyage AI" /></a>
+  <a href="https://modelcontextprotocol.io/"><img src="https://img.shields.io/badge/MCP-14191f?logo=anthropic&logoColor=8B5CF6" alt="MCP" /></a>
+</p>
 
 <br />
 
@@ -16,9 +23,6 @@ Ingest PDFs, DOCX, URLs, or raw text. Query with four search strategies, a RAG a
 
 <br />
 
-[**Quick Start**](#getting-started) &nbsp;&bull;&nbsp; [API Docs (localhost)](http://localhost:8000/docs) &nbsp;&bull;&nbsp; [Report Bug](https://github.com/vaishcodescape/Omni-Graph/issues/new?labels=bug) &nbsp;&bull;&nbsp; [Request Feature](https://github.com/vaishcodescape/Omni-Graph/issues/new?labels=enhancement)
-
-<br />
 
 </div>
 
@@ -286,34 +290,6 @@ Omni-Graph/
 └── claude_desktop_config.example.json
 ```
 
-## Tech Stack
-
-<p>
-  <a href="https://www.python.org/"><img src="https://img.shields.io/badge/Python_3.11-14191f?logo=python&logoColor=3776AB" alt="Python" /></a>
-  <a href="https://www.postgresql.org/"><img src="https://img.shields.io/badge/PostgreSQL_16-14191f?logo=postgresql&logoColor=4169E1" alt="PostgreSQL" /></a>
-  <a href="https://github.com/pgvector/pgvector"><img src="https://img.shields.io/badge/pgvector-14191f?logo=postgresql&logoColor=6366F1" alt="pgvector" /></a>
-  <a href="https://fastapi.tiangolo.com/"><img src="https://img.shields.io/badge/FastAPI-14191f?logo=fastapi&logoColor=009688" alt="FastAPI" /></a>
-  <a href="https://docs.docker.com/compose/"><img src="https://img.shields.io/badge/Docker-14191f?logo=docker&logoColor=2496ED" alt="Docker" /></a>
-  <a href="https://www.anthropic.com/"><img src="https://img.shields.io/badge/Claude_AI-14191f?logo=anthropic&logoColor=D4A574" alt="Claude AI" /></a>
-  <a href="https://www.voyageai.com/"><img src="https://img.shields.io/badge/Voyage_AI-14191f?logo=voyager&logoColor=A78BFA" alt="Voyage AI" /></a>
-  <a href="https://modelcontextprotocol.io/"><img src="https://img.shields.io/badge/MCP-14191f?logo=anthropic&logoColor=8B5CF6" alt="MCP" /></a>
-</p>
-
-## Roadmap
-
-- [x] Document ingestion pipeline (PDF, DOCX, URL, text)
-- [x] Claude-powered entity and relationship extraction
-- [x] Four search strategies (fulltext, semantic, graph, hybrid)
-- [x] Conversational RAG agent with citations
-- [x] MCP server for Claude Desktop integration
-- [x] REST API with Swagger docs
-- [x] Role-based access control with audit logging
-- [x] Docker Compose deployment
-- [ ] Additional file formats (PPTX, CSV, Markdown)
-- [ ] Test coverage
-- [ ] Streaming chat responses
-- [ ] Frontend UI
-
 See the [open issues](https://github.com/vaishcodescape/Omni-Graph/issues) for a full list of proposed features and known issues.
 
 ## Contributing
@@ -328,25 +304,6 @@ We welcome contributions! If you have a suggestion that would make OmniGraph bet
 
 You can also [open issues](https://github.com/vaishcodescape/Omni-Graph/issues) for bugs or feature requests.
 
-**Where to start:**
-
-| If you want to... | Look at |
-|:-------------------|:--------|
-| Add an MCP tool | `mcp_server/server.py` |
-| Add a REST endpoint | `api/main.py` + `api/models.py` |
-| Support a new file format | `api/file_parser.py` |
-| Change entity extraction | `omnigraph/entity_relation_extractor.py` |
-| Add a search strategy | `omnigraph/semantic_query_engine.py` |
-
-<a href="https://github.com/vaishcodescape/Omni-Graph/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=vaishcodescape/Omni-Graph" />
-</a>
-
-## Contact
-
-Aditya Vaish - adityavaish846@gmail.com
-
-[![LinkedIn](https://img.shields.io/badge/LinkedIn-555?logo=linkedin)](https://linkedin.com/in/adityavaish)
 [![GitHub](https://img.shields.io/badge/GitHub-555?logo=github)](https://github.com/vaishcodescape)
 
 ## License
