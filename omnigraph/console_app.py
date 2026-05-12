@@ -1,8 +1,5 @@
 """
-OmniGraph Console — Codex-style prompt REPL.
-
-Type a natural-language question to query the AI agent, or use a
-slash command for direct data operations.
+OmniGraph Console — Codex-style REPL with a Rich-rendered TUI layer.
 
 Slash commands
 --------------
@@ -24,7 +21,6 @@ from __future__ import annotations
 import argparse
 import logging
 import os
-import re
 import shlex
 import sys
 from pathlib import Path
@@ -42,6 +38,21 @@ _PROJECT_ENV = _PROJECT_ROOT / ".env"
 load_dotenv(_PROJECT_ENV)
 load_dotenv(find_dotenv(usecwd=True))
 
+from rich import box
+from rich.align import Align
+from rich.columns import Columns
+from rich.console import Console, Group
+from rich.markdown import Markdown
+from rich.panel import Panel
+from rich.table import Table
+from rich.text import Text
+
+from prompt_toolkit import PromptSession
+from prompt_toolkit.completion import WordCompleter
+from prompt_toolkit.formatted_text import ANSI
+from prompt_toolkit.history import FileHistory
+from prompt_toolkit.styles import Style as PTStyle
+
 from omnigraph.access_control_audit import AccessControlManager
 from omnigraph.agentic_rag import get_anthropic_agent
 from omnigraph.config import settings
@@ -55,84 +66,123 @@ logging.basicConfig(
 )
 logger = logging.getLogger("omnigraph.console")
 
-# ── readline (optional) ───────────────────────────────────────────────────────
-try:
-    import readline
-    readline.set_history_length(500)
-except ImportError:
-    pass
+# ── Theme ─────────────────────────────────────────────────────────────────────
+# A single shared Console — every render goes through this so the whole app
+# stays internally consistent and respects NO_COLOR / pipes automatically.
+console = Console(highlight=False)
 
-# ── ANSI colours ──────────────────────────────────────────────────────────────
-CYAN   = "\033[96m"
-GREEN  = "\033[92m"
-YELLOW = "\033[93m"
-RED    = "\033[91m"
-DIM    = "\033[2m"
-BOLD   = "\033[1m"
-RESET  = "\033[0m"
+C_BRAND   = "bold cyan"
+C_ACCENT  = "magenta"
+C_DIM     = "grey50"
+C_OK      = "bold green"
+C_WARN    = "yellow"
+C_ERR     = "bold red"
+C_KEY     = "cyan"
+C_VAL     = "white"
+C_ENTITY  = "bold magenta"
+C_RELATION = "italic bright_blue"
 
-# ── Logo ──────────────────────────────────────────────────────────────────────
-LOGO = f"""{CYAN}
-    ___                  _  ____                 _
-   / _ \\_ __ ___  _ __ (_)/ ___|_ __ __ _ _ __ | |__
-  | | | | '_ ` _ \\| '_ \\| | |  _| '__/ _` | '_ \\| '_ \\
-  | |_| | | | | | | | | | | |_| | | | (_| | |_) | | | |
-   \\___/|_| |_| |_|_| |_|_|\\____|_|  \\__,_| .__/|_| |_|
-                                            |_|
-{RESET}"""
+SLASH_COMMANDS = [
+    "/search", "/entity", "/path", "/docs", "/stats", "/audit",
+    "/concepts", "/experts", "/model", "/clear", "/help", "/?",
+    "/exit", "/quit",
+]
 
-_HELP_TEXT = f"""
-  {BOLD}Slash commands{RESET}
-
-  {CYAN}/search{RESET}  <query> [{DIM}--strategy hybrid|semantic|fulltext|graph{RESET}] [{DIM}--limit N{RESET}]
-  {CYAN}/entity{RESET}  <name|id> [{DIM}--depth N{RESET}]
-  {CYAN}/path{RESET}    <entity1> <entity2> [{DIM}--depth N{RESET}]
-  {CYAN}/docs{RESET}    [{DIM}--type report|email|...{RESET}] [{DIM}--limit N{RESET}]
-  {CYAN}/stats{RESET}
-  {CYAN}/audit{RESET}   [{DIM}--days N{RESET}] [{DIM}--limit N{RESET}]
-  {CYAN}/concepts{RESET} <topic>
-  {CYAN}/experts{RESET}  <topic> [{DIM}--limit N{RESET}]
-  {CYAN}/model{RESET}   [{DIM}<model-id>{RESET}]    show or switch AI model
-  {CYAN}/clear{RESET}                  clear screen
-  {CYAN}/help{RESET} | {CYAN}/?{RESET}             show this help
-  {CYAN}/exit{RESET} | {CYAN}/quit{RESET}           exit
-
-  {DIM}Or just type a question — the AI agent will answer it.{RESET}
-"""
+HISTORY_PATH = Path.home() / ".omnigraph_history"
 
 
-# ── Table renderer ────────────────────────────────────────────────────────────
-
-def _strip_ansi(s: str) -> str:
-    return re.sub(r"\033\[[0-9;]*m", "", s)
-
-
-def print_table(headers: list, rows: list, widths: Optional[list] = None) -> None:
-    if not rows:
-        print(f"  {DIM}(no results){RESET}")
-        return
-    widths = widths or [
-        min(
-            max(len(str(h)), max((len(str(r[i])) for r in rows if i < len(r)), default=0)) + 2,
-            50,
-        )
-        for i, h in enumerate(headers)
-    ]
-    header_line = "".join(
-        f"{BOLD}{str(h).ljust(w)}{RESET}" for h, w in zip(headers, widths)
+def _print_header() -> None:
+    title = Text.assemble(
+        ("◆ ", "bold bright_cyan"),
+        ("omni", "bold cyan"),
+        ("graph", "bold bright_white"),
     )
-    print(f"  {header_line}")
-    print(f"  {DIM}{''.join('─' * w for w in widths)}{RESET}")
-    for row in rows:
-        cells = [str(row[i] if i < len(row) else "").ljust(w)[:w] for i, w in enumerate(widths)]
-        print(f"  {''.join(cells)}")
+    subtitle = Text("enterprise knowledge graph console", style="dim cyan")
+
+    grid = Table.grid(padding=(0, 0))
+    grid.add_column(justify="center")
+    grid.add_row(title)
+    grid.add_row(Text(""))
+    grid.add_row(subtitle)
+
+    console.print(
+        Panel(
+            Align.center(grid),
+            box=box.DOUBLE,
+            border_style="cyan",
+            padding=(1, 10),
+        )
+    )
+    console.print()
+
+    kb = Text()
+    kb.append("  /help", style="bold cyan")
+    kb.append("  commands    ", style=C_DIM)
+    kb.append("tab", style="bold cyan")
+    kb.append("  autocomplete    ", style=C_DIM)
+    kb.append("^D", style="bold cyan")
+    kb.append("  exit", style=C_DIM)
+    console.print(kb)
+    console.print()
+
+
+def _help_panel() -> Panel:
+    categories = [
+        ("search & discovery", [
+            ("/search <query>",    "[--strategy hybrid|semantic|fulltext|graph] [--limit N]"),
+            ("/concepts <topic>",  "related concepts in the graph"),
+            ("/experts <topic>",   "[--limit N]   domain expert lookup"),
+        ]),
+        ("graph exploration", [
+            ("/entity <name|id>",  "[--depth N]   neighborhood walk"),
+            ("/path <a> <b>",      "[--depth N]   shortest path between entities"),
+        ]),
+        ("data & admin", [
+            ("/docs",              "[--type T] [--limit N]   list documents"),
+            ("/stats",             "graph-wide counts and metrics"),
+            ("/audit",             "[--days N] [--limit N]   audit trail"),
+        ]),
+        ("console", [
+            ("/model [id]",        "show or switch the active AI model"),
+            ("/clear",             "clear screen"),
+            ("/help  /?",          "this help"),
+            ("/exit  /quit",       "leave the console"),
+        ]),
+    ]
+
+    renderables: List = []
+    for cat, cmds in categories:
+        t = Table.grid(padding=(0, 2))
+        t.add_column(style=C_KEY, no_wrap=True, min_width=22)
+        t.add_column(style=C_DIM)
+        for k, v in cmds:
+            t.add_row(k, v)
+        renderables.append(Text(f"  {cat}", style=f"bold {C_BRAND}"))
+        renderables.append(t)
+        renderables.append(Text(""))
+
+    renderables.append(
+        Text(
+            "  Or just type a question — the agent will answer from the knowledge graph.",
+            style=f"italic {C_DIM}",
+        )
+    )
+
+    return Panel(
+        Group(*renderables),
+        title="[bold cyan] commands [/]",
+        title_align="left",
+        border_style="cyan",
+        box=box.ROUNDED,
+        padding=(1, 2),
+    )
 
 
 # ── Console class ─────────────────────────────────────────────────────────────
 
 class OmniGraphConsole:
 
-    _DEFAULT_MODEL = "claude-opus-4-6"
+    _DEFAULT_MODEL = "claude-opus-4-7"
 
     def __init__(self) -> None:
         self.db: Optional[DatabaseConnection] = None
@@ -142,17 +192,22 @@ class OmniGraphConsole:
         self.agent = None
         self.current_user_id: Optional[int] = None
         self.current_username: Optional[str] = None
+        self.current_fullname: Optional[str] = None
         self._agent_model: str = self._DEFAULT_MODEL
+        self._session: Optional[PromptSession] = None
 
     # ── Startup ───────────────────────────────────────────────────────────
 
     def run(self) -> None:
-        print(LOGO)
+        console.clear()
+        _print_header()
+        console.print()
         self._connect()
         if not self._authenticate():
             self.db.disconnect()
             return
-        print(_HELP_TEXT)
+        self._print_welcome()
+        self._init_prompt_session()
         self._repl()
         self.access_manager.log_audit(
             user_id=self.current_user_id,
@@ -161,26 +216,32 @@ class OmniGraphConsole:
             details="Console logout",
         )
         self.db.disconnect()
-        print(f"\n  {DIM}Goodbye.{RESET}\n")
+        console.print()
+        console.print(Text("  goodbye.", style=C_DIM))
+        console.print()
 
     def _connect(self) -> None:
         host = settings.db_host
-        print(f"  {DIM}Connecting to {host}/{settings.db_name}...{RESET} ", end="", flush=True)
-        try:
-            self.db = DatabaseConnection()
-            self.db.connect()
-            self.graph_builder = KnowledgeGraphBuilder(self.db)
-            self.access_manager = AccessControlManager(self.db)
-            print(f"{GREEN}✓{RESET}")
-        except Exception as exc:
-            print(f"{RED}✗{RESET}")
-            print(f"  {RED}Connection failed: {exc}{RESET}\n")
-            sys.exit(1)
+        target = f"{host}/{settings.db_name}"
+        with console.status(
+            f"[{C_DIM}]connecting to[/] [bold]{target}[/]…",
+            spinner="dots",
+            spinner_style=C_BRAND,
+        ):
+            try:
+                self.db = DatabaseConnection()
+                self.db.connect()
+                self.graph_builder = KnowledgeGraphBuilder(self.db)
+                self.access_manager = AccessControlManager(self.db)
+            except Exception as exc:
+                console.print(f"  [{C_ERR}]✗ connection failed:[/] {exc}\n")
+                sys.exit(1)
+        console.print(f"  [{C_OK}]✓[/] connected to [bold]{target}[/]")
 
     def _authenticate(self) -> bool:
-        print()
+        console.print()
         try:
-            username = input(f"  Username: ").strip()
+            username = console.input(f"  [{C_KEY}]username[/] [dim]›[/] ").strip()
         except (EOFError, KeyboardInterrupt):
             return False
         if not username:
@@ -198,15 +259,18 @@ class OmniGraphConsole:
                 )
                 row = cur.fetchone()
         except psycopg2.Error as exc:
-            print(f"  {RED}Auth query failed: {exc}{RESET}")
+            console.print(f"  [{C_ERR}]auth query failed:[/] {exc}")
             return False
 
         if not row:
-            print(f"  {YELLOW}User '{username}' not found or inactive.{RESET}")
+            console.print(
+                f"  [{C_WARN}]user '{username}' not found or inactive.[/]"
+            )
             return False
 
         self.current_user_id, full_name = row
         self.current_username = username
+        self.current_fullname = full_name
         self.query_engine = SemanticQueryEngine(self.db, user_id=self.current_user_id)
         self.access_manager.log_audit(
             user_id=self.current_user_id,
@@ -214,33 +278,103 @@ class OmniGraphConsole:
             resource_type="system",
             details=f"Console login: {username}",
         )
-        print(f"  {GREEN}Welcome, {full_name}.{RESET}")
         return True
+
+    def _print_welcome(self) -> None:
+        info = Table.grid(padding=(0, 3))
+        info.add_column(style=f"bold {C_DIM}", no_wrap=True, justify="right")
+        info.add_column(style=C_VAL)
+        info.add_row(
+            "user",
+            Text.assemble(
+                (self.current_fullname or "", f"bold {C_OK}"),
+                ("  ", ""),
+                (f"({self.current_username})", C_DIM),
+            ),
+        )
+        info.add_row(
+            "host",
+            Text.assemble(
+                (settings.db_host, "bold"),
+                ("/", C_DIM),
+                (settings.db_name, "bold"),
+            ),
+        )
+        info.add_row("model", Text(self._agent_model, style=C_BRAND))
+        console.print()
+        console.print(
+            Panel(
+                Align.center(info),
+                title=f"[{C_DIM}]● session[/]",
+                title_align="left",
+                box=box.ROUNDED,
+                border_style=C_DIM,
+                padding=(0, 4),
+            )
+        )
+        console.print()
+
+    # ── prompt_toolkit setup ──────────────────────────────────────────────
+
+    def _init_prompt_session(self) -> None:
+        completer = WordCompleter(SLASH_COMMANDS, ignore_case=True, sentence=False)
+        style = PTStyle.from_dict({
+            "prompt.brand":   "ansicyan bold",
+            "prompt.sep":     "ansibrightblack",
+            "prompt.user":    "ansibrightblack",
+            "prompt.arrow":   "ansicyan bold",
+            "bottom-toolbar": "bg:#1a1a2e #606080",
+        })
+        self._session = PromptSession(
+            history=FileHistory(str(HISTORY_PATH)),
+            completer=completer,
+            complete_while_typing=True,
+            style=style,
+            bottom_toolbar=self._bottom_toolbar,
+        )
+
+    def _bottom_toolbar(self) -> ANSI:
+        return ANSI(
+            f"\x1b[1;36m ◆ omni\x1b[0m"
+            f"\x1b[90m  ·  \x1b[0m"
+            f"\x1b[37m{self.current_username}\x1b[0m"
+            f"\x1b[90m  ·  \x1b[0m"
+            f"\x1b[37m{self._agent_model}\x1b[0m"
+            f"\x1b[90m  ·  \x1b[0m"
+            f"\x1b[37m{settings.db_host}/{settings.db_name}\x1b[0m"
+            f"\x1b[90m  ·  ^C cancel  ·  ^D exit \x1b[0m"
+        )
+
+    def _read_prompt(self) -> Optional[str]:
+        # Two-line shell-style prompt — measures width correctly via raw ANSI.
+        prompt_ansi = ANSI(
+            f"\n \x1b[1;36m╭─◆ omni\x1b[0m"
+            f"\x1b[90m ─── {self.current_username} \x1b[0m"
+            f"\n \x1b[1;36m╰─›\x1b[0m "
+        )
+        try:
+            return self._session.prompt(prompt_ansi).strip()
+        except KeyboardInterrupt:
+            return ""
+        except EOFError:
+            return None
 
     # ── REPL ─────────────────────────────────────────────────────────────
 
     def _repl(self) -> None:
-        prompt = (
-            f"\n{CYAN}omni{RESET} "
-            f"{DIM}[{self.current_username}]{RESET}"
-            f"{BOLD}>{RESET} "
-        )
         while True:
-            try:
-                line = input(prompt).strip()
-            except (EOFError, KeyboardInterrupt):
-                print()
+            line = self._read_prompt()
+            if line is None:
                 break
             if not line:
                 continue
             if line.startswith("/"):
                 if self._dispatch_command(line):
-                    break  # /exit or /quit returned True
+                    break
             else:
                 self._run_agent(line)
 
     def _dispatch_command(self, line: str) -> bool:
-        """Dispatch a slash command. Returns True when the REPL should exit."""
         raw = line[1:]
         parts = raw.split(None, 1)
         cmd = parts[0].lower() if parts else ""
@@ -258,14 +392,17 @@ class OmniGraphConsole:
             "concepts": (self._cmd_concepts,                   False),
             "experts":  (self._cmd_experts,                    False),
             "model":    (self._cmd_model,                      False),
-            "clear":    (lambda a: os.system("clear || cls"),  False),
+            "clear":    (lambda a: console.clear(),            False),
             "exit":     (lambda a: None,                       True),
             "quit":     (lambda a: None,                       True),
         }
 
         entry = handlers.get(cmd)
         if entry is None:
-            print(f"  {YELLOW}Unknown command /{cmd}. Type /help for available commands.{RESET}")
+            console.print(
+                f"  [{C_WARN}]unknown command[/] [b]/{cmd}[/]. "
+                f"type [b]/help[/]."
+            )
             return False
 
         fn, should_exit = entry
@@ -274,41 +411,52 @@ class OmniGraphConsole:
                 fn(args)
             except Exception as exc:
                 logger.exception("Command /%s failed", cmd)
-                print(f"  {YELLOW}Command error: {exc}{RESET}")
+                console.print(f"  [{C_ERR}]command error:[/] {exc}")
         return should_exit
 
     # ── Agent ─────────────────────────────────────────────────────────────
 
     def _run_agent(self, question: str) -> None:
         if self.agent is None:
-            self.agent = get_anthropic_agent(
-                self.db, self.current_user_id, model=self._agent_model
-            )
+            with console.status(
+                f"[{C_DIM}]initializing[/] [bold]{self._agent_model}[/]…",
+                spinner="dots",
+                spinner_style=C_BRAND,
+            ):
+                self.agent = get_anthropic_agent(
+                    self.db, self.current_user_id, model=self._agent_model
+                )
         if self.agent is None:
-            print(
-                f"\n  {YELLOW}Agent unavailable — set ANTHROPIC_API_KEY, "
-                f"or use /search for keyword queries.{RESET}"
+            console.print(
+                f"\n  [{C_WARN}]agent unavailable —[/] set ANTHROPIC_API_KEY, "
+                f"or use [b]/search[/] for keyword queries."
             )
             return
 
-        print()
-        text_started = False
+        console.print()
+        console.print(Text("  thinking…", style=f"italic {C_DIM}"))
+
+        text_started = {"v": False}
+        full_text: List[str] = []
 
         def on_tool_call(name: str, args: Dict) -> None:
-            nonlocal text_started
-            if text_started:
-                # Ensure we're on a fresh line after any streamed text
-                print()
-                text_started = False
+            if text_started["v"]:
+                console.print()
+                text_started["v"] = False
             arg_summary = _format_tool_args(args)
-            print(f"  {DIM}⚙  {name}({arg_summary}){RESET}")
+            console.print(
+                f"  [{C_DIM}]● {name}([/]"
+                f"[italic {C_DIM}]{arg_summary}[/]"
+                f"[{C_DIM}])[/]"
+            )
 
         def on_text_chunk(chunk: str) -> None:
-            nonlocal text_started
-            if not text_started:
-                print()          # blank line before answer starts
-                text_started = True
-            print(chunk, end="", flush=True)
+            if not text_started["v"]:
+                console.print()
+                text_started["v"] = True
+            full_text.append(chunk)
+            # Stream raw — Markdown rendering on partial text is unreliable.
+            console.out(chunk, end="", highlight=False)
 
         try:
             result = self.agent.run(
@@ -316,18 +464,29 @@ class OmniGraphConsole:
                 on_tool_call=on_tool_call,
                 on_text_chunk=on_text_chunk,
             )
+        except KeyboardInterrupt:
+            console.print(f"\n  [{C_WARN}]cancelled.[/]")
+            return
         except Exception as exc:
             logger.exception("Agent run failed")
-            print(f"\n  {YELLOW}Agent error: {exc}{RESET}")
+            console.print(f"\n  [{C_ERR}]agent error:[/] {exc}")
             return
 
-        if text_started:
-            print()   # trailing newline after streamed answer
+        if text_started["v"]:
+            console.print()
         elif result.get("answer"):
-            # No streaming happened (e.g. non-streaming fallback)
-            print()
-            for ln in result["answer"].split("\n"):
-                print(f"  {ln}")
+            # No streaming happened — render the full answer as Markdown.
+            console.print()
+            console.print(
+                Panel(
+                    Markdown(result["answer"]),
+                    title=f"[{C_DIM}]◆ response[/]",
+                    title_align="left",
+                    border_style="cyan",
+                    box=box.ROUNDED,
+                    padding=(1, 2),
+                )
+            )
 
         citations = result.get("citations") or []
         if citations:
@@ -335,14 +494,18 @@ class OmniGraphConsole:
                 f"[{c['document_id']}] {str(c.get('title', ''))[:40]}"
                 for c in citations
             ]
-            print(f"\n  {DIM}Sources: {' | '.join(parts)}{RESET}")
+            console.print(
+                f"\n  [{C_DIM}]sources:[/] "
+                f"[italic {C_DIM}]{' · '.join(parts)}[/]"
+            )
 
         self._audit("view", "system", details=f"Agent: {question[:80]}")
 
     # ── Slash command handlers ────────────────────────────────────────────
 
     def _cmd_help(self) -> None:
-        print(_HELP_TEXT)
+        console.print()
+        console.print(_help_panel())
 
     def _cmd_search(self, args: str) -> None:
         ns = self._parse(
@@ -360,21 +523,32 @@ class OmniGraphConsole:
             return
 
         query = " ".join(ns.query)
-        print(f"\n  {DIM}Searching \"{query}\" ({ns.strategy})…{RESET}")
-
-        results = self.query_engine.search(query, strategy=ns.strategy, limit=ns.limit)
-        readable = self._filter_readable(results)
+        with console.status(
+            f"[{C_DIM}]searching[/] [italic]\"{query}\"[/] "
+            f"[{C_DIM}]({ns.strategy})…[/]",
+            spinner="dots",
+            spinner_style=C_BRAND,
+        ):
+            results = self.query_engine.search(
+                query, strategy=ns.strategy, limit=ns.limit
+            )
+            readable = self._filter_readable(results)
 
         if not readable:
-            print(f"  {YELLOW}No results.{RESET}")
+            console.print(f"  [{C_WARN}]no results.[/]")
             return
 
-        rows = [
-            [i + 1, r["document_id"], r["title"][:40], r["source_type"], f"{r['score']:.3f}"]
-            for i, r in enumerate(readable)
-        ]
-        print()
-        print_table(["#", "ID", "Title", "Type", "Score"], rows, [4, 6, 42, 16, 8])
+        t = _table("results", ["#", "id", "title", "type", "score"])
+        for i, r in enumerate(readable):
+            t.add_row(
+                str(i + 1),
+                str(r["document_id"]),
+                r["title"][:60],
+                r["source_type"],
+                f"{r['score']:.3f}",
+            )
+        console.print()
+        console.print(t)
         self._audit("search", "document", details=f"Search: {query[:80]}")
 
     def _cmd_entity(self, args: str) -> None:
@@ -397,20 +571,26 @@ class OmniGraphConsole:
 
         neighbors = self.graph_builder.get_entity_neighborhood(entity_id, ns.depth)
         if not neighbors:
-            print(f"  {YELLOW}No neighbors found for entity #{entity_id}.{RESET}")
+            console.print(
+                f"  [{C_WARN}]no neighbors found for entity[/] [b]#{entity_id}[/]."
+            )
             return
 
-        rows = [
-            [n["entity_id"], n["name"], n["entity_type"], n["relation_type"],
-             f"{n['strength']:.3f}", n["depth"]]
-            for n in neighbors
-        ]
-        print()
-        print_table(
-            ["ID", "Name", "Type", "Relation", "Strength", "Depth"],
-            rows,
-            [6, 24, 14, 20, 10, 6],
+        t = _table(
+            f"neighborhood of #{entity_id} (depth {ns.depth})",
+            ["id", "name", "type", "relation", "strength", "depth"],
         )
+        for n in neighbors:
+            t.add_row(
+                str(n["entity_id"]),
+                Text(n["name"], style=C_ENTITY).plain,
+                n["entity_type"],
+                Text(n["relation_type"], style=C_RELATION).plain,
+                f"{n['strength']:.3f}",
+                str(n["depth"]),
+            )
+        console.print()
+        console.print(t)
 
     def _cmd_path(self, args: str) -> None:
         ns = self._parse(
@@ -440,23 +620,36 @@ class OmniGraphConsole:
                 rows = cur.fetchall()
         except psycopg2.Error as exc:
             self.db.conn.rollback()
-            print(f"  {YELLOW}Path lookup failed: {exc}{RESET}")
+            console.print(f"  [{C_WARN}]path lookup failed:[/] {exc}")
             return
 
         if not rows:
-            print(f"  {YELLOW}No path found between #{source_id} and #{target_id}.{RESET}")
+            console.print(
+                f"  [{C_WARN}]no path found between[/] [b]#{source_id}[/] "
+                f"[{C_WARN}]and[/] [b]#{target_id}[/]."
+            )
             return
 
+        console.print()
         for i, row in enumerate(rows):
-            entities = row[1]
-            relations = row[2]
-            parts = []
+            length, entities, relations = row[0], row[1], row[2]
+            line = Text()
             for j, ent in enumerate(entities):
-                parts.append(f"{BOLD}{ent}{RESET}")
+                line.append(str(ent), style=C_ENTITY)
                 if j < len(relations):
-                    parts.append(f" {DIM}──[{relations[j]}]──▶{RESET} ")
-            print(f"\n  {GREEN}Path {i + 1}{RESET} {DIM}(length={row[0]}){RESET}")
-            print(f"    {''.join(parts)}")
+                    line.append("  ─[ ", style=C_DIM)
+                    line.append(str(relations[j]), style=C_RELATION)
+                    line.append(" ]─▶  ", style=C_DIM)
+            console.print(
+                Panel(
+                    line,
+                    title=f"[bold cyan]path {i + 1}[/]  [dim]length={length}[/]",
+                    title_align="left",
+                    border_style="cyan",
+                    box=box.ROUNDED,
+                    padding=(0, 2),
+                )
+            )
 
     def _cmd_docs(self, args: str) -> None:
         ns = self._parse(
@@ -494,35 +687,41 @@ class OmniGraphConsole:
                 )
                 rows_raw = cur.fetchall()
         except psycopg2.Error as exc:
-            print(f"  {YELLOW}Query failed: {exc}{RESET}")
+            console.print(f"  [{C_WARN}]query failed:[/] {exc}")
             return
 
-        rows = [[r[0], r[1][:40], r[2], r[3], r[4]] for r in rows_raw]
-        print()
-        print_table(
-            ["ID", "Title", "Type", "Sensitivity", "Created"],
-            rows,
-            [6, 42, 16, 14, 12],
+        t = _table(
+            "documents",
+            ["id", "title", "type", "sensitivity", "created"],
         )
+        for r in rows_raw:
+            t.add_row(str(r[0]), r[1][:60], r[2], r[3], r[4])
+        console.print()
+        console.print(t)
 
     def _cmd_stats(self) -> None:
         stats = self.graph_builder.get_graph_stats()
-        overview = [
-            ["Documents",      stats.get("total_documents", 0)],
-            ["Entities",       stats.get("total_entities", 0)],
-            ["Relations",      stats.get("total_relations", 0)],
-            ["Concepts",       stats.get("total_concepts", 0)],
-            ["Taxonomy nodes", stats.get("total_taxonomy_nodes", 0)],
-        ]
-        print()
-        print_table(["Metric", "Count"], overview, [20, 10])
 
+        overview = _table("graph", ["metric", "count"], show_header=False)
+        for label, key in [
+            ("documents",      "total_documents"),
+            ("entities",       "total_entities"),
+            ("relations",      "total_relations"),
+            ("concepts",       "total_concepts"),
+            ("taxonomy nodes", "total_taxonomy_nodes"),
+        ]:
+            overview.add_row(label, f"[bold]{stats.get(key, 0):,}[/]")
+
+        renderables = [overview]
         by_type = stats.get("entities_by_type", {})
         if by_type:
-            print()
-            rows = [[k, v] for k, v in sorted(by_type.items(), key=lambda x: -x[1])]
-            print_table(["Entity type", "Count"], rows, [24, 10])
+            t = _table("entities by type", ["type", "count"], show_header=False)
+            for k, v in sorted(by_type.items(), key=lambda x: -x[1]):
+                t.add_row(k, f"[bold]{v:,}[/]")
+            renderables.append(t)
 
+        console.print()
+        console.print(Columns(renderables, padding=(0, 4), equal=False))
         self._audit("view", "system", details="Viewed graph statistics")
 
     def _cmd_audit(self, args: str) -> None:
@@ -540,46 +739,52 @@ class OmniGraphConsole:
 
         entries = self.access_manager.get_audit_trail(days=ns.days, limit=ns.limit)
         if not entries:
-            print(f"\n  {DIM}No audit entries in the last {ns.days} days.{RESET}")
+            console.print(
+                f"\n  [{C_DIM}]no audit entries in the last {ns.days} days.[/]"
+            )
             return
 
-        rows = [
-            [
+        t = _table(
+            f"audit trail · last {ns.days}d",
+            ["time", "user", "action", "resource", "id", "details"],
+        )
+        for e in entries:
+            t.add_row(
                 str(e["timestamp"])[:16],
-                str(e.get("user", ""))[:16],
+                str(e.get("user", ""))[:18],
                 e.get("action", ""),
                 e.get("resource_type", ""),
                 str(e.get("resource_id", "") or ""),
-                str(e.get("details", "") or "")[:32],
-            ]
-            for e in entries
-        ]
-        print()
-        print_table(
-            ["Time", "User", "Action", "Resource", "ID", "Details"],
-            rows,
-            [17, 18, 14, 12, 5, 34],
-        )
+                str(e.get("details", "") or "")[:48],
+            )
+        console.print()
+        console.print(t)
         self._audit("view", "system", details=f"Viewed audit trail (last {ns.days}d)")
 
     def _cmd_concepts(self, args: str) -> None:
         topic = args.strip()
         if not topic:
-            print(f"  {DIM}Usage: /concepts <topic>{RESET}")
+            console.print(f"  [{C_DIM}]usage: /concepts <topic>[/]")
             return
 
         related = self.query_engine.find_related_concepts(topic)
         if not related:
-            print(f"  {YELLOW}No related concepts found for '{topic}'.{RESET}")
+            console.print(f"  [{C_WARN}]no related concepts for '{topic}'.[/]")
             return
 
-        rows = [
-            [c["name"], c["domain"], c["relationship_types"],
-             f"{c['connection_strength']:.3f}"]
-            for c in related[:20]
-        ]
-        print()
-        print_table(["Concept", "Domain", "Relation", "Strength"], rows, [30, 16, 25, 10])
+        t = _table(
+            f"related to '{topic}'",
+            ["concept", "domain", "relation", "strength"],
+        )
+        for c in related[:20]:
+            t.add_row(
+                c["name"],
+                c.get("domain", ""),
+                c.get("relationship_types", ""),
+                f"{c['connection_strength']:.3f}",
+            )
+        console.print()
+        console.print(t)
 
     def _cmd_experts(self, args: str) -> None:
         ns = self._parse(
@@ -597,27 +802,32 @@ class OmniGraphConsole:
         topic = " ".join(ns.topic)
         experts = self.query_engine.find_experts(topic, limit=ns.limit)
         if not experts:
-            print(f"  {YELLOW}No experts found for '{topic}'.{RESET}")
+            console.print(f"  [{C_WARN}]no experts found for '{topic}'.[/]")
             return
 
-        rows = [
-            [e["full_name"], e.get("department", ""), f"{e.get('expertise_score', 0):.2f}"]
-            for e in experts
-        ]
-        print()
-        print_table(["Name", "Department", "Score"], rows, [28, 24, 8])
+        t = _table(f"experts · '{topic}'", ["name", "department", "score"])
+        for e in experts:
+            t.add_row(
+                e["full_name"],
+                e.get("department", ""),
+                f"{e.get('expertise_score', 0):.2f}",
+            )
+        console.print()
+        console.print(t)
 
     def _cmd_model(self, args: str) -> None:
         model = args.strip()
         if not model:
             current = self.agent.model if self.agent else self._agent_model
-            print(f"  Current model: {CYAN}{current}{RESET}")
-            print(f"  {DIM}Usage: /model <model-id>  "
-                  f"(e.g. claude-sonnet-4-6, claude-opus-4-7){RESET}")
+            console.print(
+                f"  current model: [{C_BRAND}]{current}[/]\n"
+                f"  [{C_DIM}]usage: /model <model-id>  "
+                f"(e.g. claude-sonnet-4-6, claude-opus-4-7)[/]"
+            )
             return
         self._agent_model = model
-        self.agent = None   # force re-init on next question
-        print(f"  {GREEN}Model set to {model}.{RESET}")
+        self.agent = None
+        console.print(f"  [{C_OK}]✓[/] model set to [bold]{model}[/]")
 
     # ── Helpers ───────────────────────────────────────────────────────────
 
@@ -628,7 +838,6 @@ class OmniGraphConsole:
         spec: list,
         usage: str = "",
     ) -> Optional[argparse.Namespace]:
-        """Build an ArgumentParser from spec, parse args, return Namespace or None."""
         parser = argparse.ArgumentParser(
             prog=prog, add_help=False, exit_on_error=False
         )
@@ -639,13 +848,13 @@ class OmniGraphConsole:
             return parser.parse_args(tokens)
         except (argparse.ArgumentError, SystemExit):
             if usage:
-                print(f"  {DIM}Usage: {usage}{RESET}")
+                console.print(f"  [{C_DIM}]usage:[/] {usage}")
             return None
 
     def _resolve_entity_id(self, value: str) -> Optional[int]:
         value = value.strip()
         if not value:
-            print(f"  {YELLOW}No entity specified.{RESET}")
+            console.print(f"  [{C_WARN}]no entity specified.[/]")
             return None
         if value.isdigit():
             return int(value)
@@ -670,26 +879,30 @@ class OmniGraphConsole:
                     for r in cur.fetchall()
                 ]
         except psycopg2.Error as exc:
-            print(f"  {YELLOW}Entity lookup error: {exc}{RESET}")
+            console.print(f"  [{C_WARN}]entity lookup error:[/] {exc}")
             return None
 
         if not matches:
-            print(f"  {YELLOW}No entity found for '{value}'.{RESET}")
+            console.print(f"  [{C_WARN}]no entity found for '{value}'.[/]")
             return None
 
         exact = [m for m in matches if m["name"].lower() == value.lower()]
         if len(exact) == 1:
             return exact[0]["entity_id"]
 
-        print(f"\n  {DIM}Multiple matches for '{value}':{RESET}")
-        rows = [
-            [m["entity_id"], m["name"][:32], m["entity_type"],
-             f"{m['confidence']:.3f}", m["doc_count"]]
-            for m in matches
-        ]
-        print_table(["ID", "Name", "Type", "Conf", "Docs"], rows, [6, 34, 16, 6, 6])
+        console.print(f"\n  [{C_DIM}]multiple matches for '{value}':[/]")
+        t = _table(None, ["id", "name", "type", "conf", "docs"])
+        for m in matches:
+            t.add_row(
+                str(m["entity_id"]),
+                m["name"][:40],
+                m["entity_type"],
+                f"{m['confidence']:.3f}",
+                str(m["doc_count"]),
+            )
+        console.print(t)
         try:
-            raw = input(f"  Entity ID to use: ").strip()
+            raw = console.input(f"  [{C_KEY}]entity id ›[/] ").strip()
             return int(raw) if raw.isdigit() else None
         except (EOFError, ValueError):
             return None
@@ -719,7 +932,23 @@ class OmniGraphConsole:
         )
 
 
-# ── Tool-arg formatter ────────────────────────────────────────────────────────
+# ── Render helpers ────────────────────────────────────────────────────────────
+
+def _table(title: Optional[str], headers: List[str], show_header: bool = True) -> Table:
+    t = Table(
+        title=f"[bold cyan]{title}[/]" if title else None,
+        title_justify="left",
+        box=box.SIMPLE_HEAVY,
+        header_style=f"bold {C_KEY}",
+        border_style=C_DIM,
+        show_header=show_header,
+        expand=False,
+        padding=(0, 1),
+    )
+    for h in headers:
+        t.add_column(h, overflow="fold")
+    return t
+
 
 def _format_tool_args(args: Dict) -> str:
     parts = []
@@ -732,12 +961,12 @@ def _format_tool_args(args: Dict) -> str:
 # ── Entry point ───────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
-    console = OmniGraphConsole()
+    app = OmniGraphConsole()
     try:
-        console.run()
+        app.run()
     except KeyboardInterrupt:
-        print(f"\n\n  {DIM}Interrupted. Goodbye.{RESET}\n")
+        console.print(f"\n\n  [{C_DIM}]interrupted. goodbye.[/]\n")
     except Exception as exc:
-        print(f"\n  {RED}Fatal error: {exc}{RESET}")
+        console.print(f"\n  [{C_ERR}]fatal error:[/] {exc}")
         logger.exception("Fatal error in console application")
         sys.exit(1)

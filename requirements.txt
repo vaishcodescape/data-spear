@@ -1,9 +1,13 @@
 # Core database + AI
 psycopg2-binary>=2.9.0
 python-dotenv>=1.0.0
-anthropic>=0.40.0
+anthropic>=0.50.0
 voyageai>=0.3.0
 pydantic-settings>=2.0.0
+
+# Console / TUI
+rich>=13.7.0
+prompt_toolkit>=3.0.43
 
 # MCP Server
 mcp>=1.0.0

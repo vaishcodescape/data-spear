@@ -195,7 +195,7 @@ You are OmniGraph Assistant, an AI that answers questions from an enterprise kno
         self,
         db: DatabaseConnection,
         user_id: int,
-        model: str = "claude-opus-4-6",
+        model: str = "claude-opus-4-7",
     ) -> None:
         self.db = db
         self.user_id = user_id
@@ -229,7 +229,6 @@ You are OmniGraph Assistant, an AI that answers questions from an enterprise kno
                 max_tokens=16000,
                 system=self._SYSTEM,
                 tools=self._anthropic_tools,
-                thinking={"type": "adaptive"},
                 messages=messages,
             ) as stream:
                 if on_text_chunk is not None:
@@ -305,11 +304,11 @@ You are OmniGraph Assistant, an AI that answers questions from an enterprise kno
                 for i in ids]
 
 
- 
+
 def get_anthropic_agent(
     db: DatabaseConnection,
     user_id: int,
-    model: str = "claude-opus-4-6",
+    model: str = "claude-opus-4-7",
 ) -> Optional[AnthropicOmniGraphAgent]:
     if not settings.anthropic_api_key:
         return None
