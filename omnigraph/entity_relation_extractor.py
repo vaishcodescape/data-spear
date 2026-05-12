@@ -1,11 +1,12 @@
 import json
 import logging
-import os
 import re
 from typing import Dict, List, Optional, Set
 
 import psycopg2  # type: ignore[import-untyped]
 from psycopg2.extras import execute_values
+
+from .config import settings
 
 logger = logging.getLogger("omnigraph.extractor")
 
@@ -123,7 +124,7 @@ class EntityRelationExtractor:
 
     def __init__(self, db_connection, use_llm: bool = True):
         self.db = db_connection
-        self._use_llm = use_llm and bool(os.getenv("ANTHROPIC_API_KEY"))
+        self._use_llm = use_llm and bool(settings.anthropic_api_key)
         self._llm_client = None
 
         if self._use_llm:

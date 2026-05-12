@@ -9,6 +9,7 @@ Supported formats:
 """
 import io
 import logging
+import re
 from typing import Optional
 
 logger = logging.getLogger("omnigraph.file_parser")
@@ -79,8 +80,6 @@ def parse_url(url: str, timeout: int = 30) -> tuple[str, Optional[str]]:
         tag.decompose()
 
     text = soup.get_text(separator="\n", strip=True)
-    # Collapse excessive blank lines
-    import re
     text = re.sub(r"\n{3,}", "\n\n", text)
     return text.strip(), page_title
 

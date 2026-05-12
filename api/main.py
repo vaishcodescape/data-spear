@@ -26,15 +26,20 @@ Run locally:
 from __future__ import annotations
 
 import logging
-import os
-from typing import Any, Dict, List, Optional
+import uuid
+from contextlib import asynccontextmanager
+from typing import Any, AsyncGenerator, Dict, List, Optional
 
 import psycopg2
-from fastapi import Depends, FastAPI, File, Form, HTTPException, Query, UploadFile, status
+from fastapi import Depends, FastAPI, File, Form, HTTPException, Query, Request, UploadFile, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import Response
+from starlette.middleware.base import BaseHTTPMiddleware
 
 from omnigraph.access_control_audit import AccessControlManager
 from omnigraph.agentic_rag import AnthropicOmniGraphAgent
+from omnigraph.config import settings
+from omnigraph.database import close_pool, init_pool
 from omnigraph.entity_relation_extractor import EntityRelationExtractor
 from omnigraph.graph_builder import KnowledgeGraphBuilder
 from omnigraph.ingestion_pipeline import DatabaseConnection, DocumentIngester
@@ -62,10 +67,30 @@ from .models import (
 )
 
 logging.basicConfig(
-    level=logging.INFO,
+    level=settings.log_level,
     format="%(asctime)s  %(levelname)-8s  %(name)s  %(message)s",
 )
 logger = logging.getLogger("omnigraph.api")
+
+
+# ── Lifespan ──────────────────────────────────────────────────────────────────
+
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
+    init_pool()
+    yield
+    close_pool()
+
+
+# ── Request-ID middleware ─────────────────────────────────────────────────────
+
+class RequestIDMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next) -> Response:
+        request_id = request.headers.get("X-Request-ID", str(uuid.uuid4()))
+        response = await call_next(request)
+        response.headers["X-Request-ID"] = request_id
+        return response
+
 
 # ── App ───────────────────────────────────────────────────────────────────────
 
@@ -79,11 +104,13 @@ app = FastAPI(
     version="1.0.0",
     docs_url="/docs",
     redoc_url="/redoc",
+    lifespan=lifespan,
 )
 
+app.add_middleware(RequestIDMiddleware)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=settings.cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -105,8 +132,8 @@ def health(db: DatabaseConnection = Depends(get_db)) -> Dict[str, Any]:
     return {
         "status": "ok" if db_status == "connected" else "degraded",
         "database": db_status,
-        "llm_extraction": bool(os.getenv("ANTHROPIC_API_KEY")),
-        "semantic_search": bool(os.getenv("VOYAGE_API_KEY")),
+        "llm_extraction": bool(settings.anthropic_api_key),
+        "semantic_search": bool(settings.voyage_api_key),
     }
 
 
@@ -479,7 +506,7 @@ def chat(
 
     Requires ``ANTHROPIC_API_KEY`` to be set.
     """
-    if not os.getenv("ANTHROPIC_API_KEY"):
+    if not settings.anthropic_api_key:
         raise HTTPException(
             status_code=503,
             detail="ANTHROPIC_API_KEY is not configured. Chat is unavailable.",
