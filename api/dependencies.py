@@ -1,18 +1,15 @@
-"""FastAPI dependency injection for database connections."""
+"""FastAPI dependency injection for database connections (pool-backed)."""
 from typing import Generator
 
+from omnigraph.database import get_connection
 from omnigraph.ingestion_pipeline import DatabaseConnection
 
 
 def get_db() -> Generator[DatabaseConnection, None, None]:
+    """Yield a DatabaseConnection backed by the shared connection pool.
+
+    The raw connection is returned to the pool automatically when the
+    request completes (or errors), so callers must not call disconnect().
     """
-    Yield a fresh DatabaseConnection per request and close it when done.
-    All connection parameters are read from environment variables
-    (OMNIGRAPH_DB_HOST, OMNIGRAPH_DB_PORT, OMNIGRAPH_DB_NAME, etc.).
-    """
-    db = DatabaseConnection()
-    db.connect()
-    try:
-        yield db
-    finally:
-        db.disconnect()
+    with get_connection() as raw_conn:
+        yield DatabaseConnection(conn=raw_conn)

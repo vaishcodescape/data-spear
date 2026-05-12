@@ -1,13 +1,13 @@
-# RAG Pipeline  
+# RAG Pipeline
 from __future__ import annotations
 
-import os
 import re
 from typing import Any, Callable, Dict, List, NamedTuple, Optional
 
 import anthropic
 
 from .access_control_audit import AccessControlManager
+from .config import settings
 from .ingestion_pipeline import DatabaseConnection
 from .semantic_query_engine import SemanticQueryEngine
 
@@ -207,7 +207,19 @@ You are OmniGraph Assistant, an AI that answers questions from an enterprise kno
         self._tool_map: Dict[str, Callable] = {t.schema["name"]: t.fn for t in tools}
         self._anthropic_tools: List[Dict[str, Any]] = [t.schema for t in tools]
 
-    def run(self, question: str) -> Dict[str, Any]:
+    def run(
+        self,
+        question: str,
+        *,
+        on_tool_call: Optional[Callable[[str, Dict[str, Any]], None]] = None,
+        on_text_chunk: Optional[Callable[[str], None]] = None,
+    ) -> Dict[str, Any]:
+        """Run the agent loop.
+
+        on_tool_call(name, input) -- called just before each tool executes.
+        on_text_chunk(chunk)      -- called for each streamed text token.
+        Both callbacks are optional; omitting them gives the original batch behaviour.
+        """
         messages: List[Dict[str, Any]] = [{"role": "user", "content": question}]
         tools_used: List[Dict[str, Any]] = []
 
@@ -220,6 +232,9 @@ You are OmniGraph Assistant, an AI that answers questions from an enterprise kno
                 thinking={"type": "adaptive"},
                 messages=messages,
             ) as stream:
+                if on_text_chunk is not None:
+                    for chunk in stream.text_stream:
+                        on_text_chunk(chunk)
                 response = stream.get_final_message()
 
             messages.append({"role": "assistant", "content": response.content})
@@ -233,6 +248,8 @@ You are OmniGraph Assistant, an AI that answers questions from an enterprise kno
             tool_results: List[Dict[str, Any]] = []
             for block in response.content:
                 if block.type == "tool_use":
+                    if on_tool_call is not None:
+                        on_tool_call(block.name, dict(block.input))
                     fn = self._tool_map.get(block.name)
                     if fn is not None:
                         try:
@@ -294,7 +311,7 @@ def get_anthropic_agent(
     user_id: int,
     model: str = "claude-opus-4-6",
 ) -> Optional[AnthropicOmniGraphAgent]:
-    if not os.getenv("ANTHROPIC_API_KEY"):
+    if not settings.anthropic_api_key:
         return None
     return AnthropicOmniGraphAgent(db, user_id, model=model)
 

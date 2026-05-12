@@ -33,6 +33,7 @@ services:
       - .env
     environment:
       OMNIGRAPH_DB_HOST: postgres
+      UVICORN_WORKERS: ${UVICORN_WORKERS:-2}
     depends_on:
       postgres:
         condition: service_healthy

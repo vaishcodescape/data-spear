@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import hashlib
 import logging
 import mimetypes
@@ -7,6 +9,7 @@ from typing import Dict, List, Optional, Tuple
 
 import psycopg2  # type: ignore[import-untyped]
 
+from .config import settings
 from .embedder import generate_embedding
 
 logger = logging.getLogger("omnigraph.ingestion")
@@ -47,8 +50,12 @@ DEFAULT_CHUNK_SIZE = 2000
 DEFAULT_CHUNK_OVERLAP = 200
 
 
-# PostgreSQL connection using OMNIGRAPH_DB_USER/PASSWORD when set.
 class DatabaseConnection:
+    """Wraps a psycopg2 connection.
+
+    Pass ``conn`` to reuse an already-opened connection (e.g. from the pool).
+    Omit it to let the instance open and own its own connection.
+    """
 
     def __init__(
         self,
@@ -57,17 +64,27 @@ class DatabaseConnection:
         dbname: Optional[str] = None,
         user: Optional[str] = None,
         password: Optional[str] = None,
+        *,
+        conn=None,
     ):
-        self.connection_params = {
-            "host": host or os.getenv("OMNIGRAPH_DB_HOST", "localhost"),
-            "port": port or int(os.getenv("OMNIGRAPH_DB_PORT", "5432")),
-            "dbname": dbname or os.getenv("OMNIGRAPH_DB_NAME", "omnigraph"),
-            "user": user or os.getenv("OMNIGRAPH_DB_USER", "postgres"),
-            "password": password or os.getenv("OMNIGRAPH_DB_PASSWORD", "postgres"),
-        }
-        self._conn = None
+        if conn is not None:
+            self._conn = conn
+            self._owns_conn = False
+            self.connection_params: Dict = {}
+        else:
+            self._conn = None
+            self._owns_conn = True
+            self.connection_params = {
+                "host": host or settings.db_host,
+                "port": port or settings.db_port,
+                "dbname": dbname or settings.db_name,
+                "user": user or settings.db_user,
+                "password": password or settings.db_password,
+            }
 
-    def connect(self):
+    def connect(self) -> None:
+        if not self._owns_conn:
+            return
         try:
             self._conn = psycopg2.connect(**self.connection_params)
             self._conn.autocommit = False
@@ -76,15 +93,18 @@ class DatabaseConnection:
             logger.error("Failed to connect to database: %s", exc)
             raise
 
-    def disconnect(self):
-        if self._conn and not self._conn.closed:
+    def disconnect(self) -> None:
+        if self._owns_conn and self._conn and not self._conn.closed:
             self._conn.close()
             logger.info("Database connection closed.")
 
     @property
     def conn(self):
         if self._conn is None or self._conn.closed:
-            self.connect()
+            if self._owns_conn:
+                self.connect()
+            else:
+                raise RuntimeError("Pooled connection is closed or has been returned to the pool.")
         return self._conn
 
 
@@ -447,30 +467,3 @@ class DocumentIngester:
             return False
 
 
-if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
-    db = DatabaseConnection()
-    db.connect()
-    ingester = DocumentIngester(db)
-
-    doc_id = ingester.ingest_document(
-        title="Test Document - Ingestion Pipeline Validation",
-        source_type="technical_doc",
-        content=(
-            "This is a test document created by the ingestion pipeline. "
-            "It validates that the pipeline correctly normalizes text, "
-            "computes content hashes, and stores documents in PostgreSQL."
-        ),
-        uploaded_by=1,
-        sensitivity_level="internal",
-        summary="Pipeline validation test document.",
-    )
-
-    if doc_id:
-        print(f"SUCCESS: Document ingested with id={doc_id}")
-        chunks = ingester.chunk_document("A" * 5000, chunk_size=2000, overlap=200)
-        print(f"Document chunked into {len(chunks)} segments.")
-    else:
-        print("FAILED: Document ingestion returned None.")
-
-    db.disconnect()

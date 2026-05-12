@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import logging
-import os
 from typing import List, Optional
+
+from .config import settings
 
 logger = logging.getLogger("omnigraph.embedder")
 
@@ -26,7 +27,7 @@ def _get_client():
                 "Install it with: pip install voyageai"
             )
             raise _unavailable from exc
-        api_key = os.getenv("VOYAGE_API_KEY")
+        api_key = settings.voyage_api_key
         if not api_key:
             _unavailable = EnvironmentError(
                 "VOYAGE_API_KEY environment variable is not set. "
