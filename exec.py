@@ -1,7 +1,7 @@
 from dotenv import load_dotenv
 load_dotenv()
 
-from omnigraph.console_app import OmniGraphConsole
+from dataspear.console_app import OmniGraphConsole
 
 if __name__ == "__main__":
 
