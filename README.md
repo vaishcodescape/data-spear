@@ -14,6 +14,8 @@
 
 <br />
 
+## Data-Spear Schema Model
+<div>
 <img src="./database-schema.jpeg" alt="demo-schema" width="860" />
-
+</div>
 </div>
