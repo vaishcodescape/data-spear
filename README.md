@@ -26,7 +26,7 @@ Rust TUI ──HTTP/SSE──▶ FastAPI ──▶ Agent loop (Claude)
 
 - **Live agent trace** — every tool call streams into the TUI as it happens (`✓ run_query SELECT … → 12 rows`) and stays as an audit log.
 - **Tiered SQL safety, enforced server-side** — reads run freely; bounded writes must be transaction-wrapped; destructive/DDL statements (`DROP`, `ALTER`, unbounded `UPDATE`/`DELETE`) are rejected unless you authorize the request with a `!` prefix.
-- **Connect at startup** — point the TUI at any local or hosted Postgres (Neon, Supabase, RDS, …); credentials are validated before the chat opens.
+- **Connect at startup** — point the TUI at any local or hosted Postgres (NeonDB, RDS, …); credentials are validated before the chat opens.
 - **Isolated retrieval** — vectors are namespaced per connected database, so context never leaks across databases.
 - **Guardrails** — per-statement timeout, automatic rollback of unwrapped writes, optional bearer-token auth on the API.
 
