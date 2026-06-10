@@ -13,7 +13,7 @@ An autonomous SQL agent for PostgreSQL, in your terminal.
 
 ---
 
-Data-Spear answers questions about your database by **acting like an analyst, not a search box**: it plans, inspects schemas, runs live SQL, verifies its own results, and cites every claim. Retrieval (Pinecone) supplies context; the agent (Claude) treats the live database as the source of truth.
+Data-Spear answers questions about your database by **acting like an analyst, not a search box**: it plans, inspects schemas, runs live SQL, verifies its own results, and cites every claim. Retrieval (Pinecone) supplies context; the agent (Claude) treats the live database as the source of information.
 
 ```text
 Rust TUI ──HTTP/SSE──▶ FastAPI ──▶ Agent loop (Claude)
