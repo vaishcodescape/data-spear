@@ -5,15 +5,19 @@
 <p>
   <a href="https://www.python.org/"><img src="https://img.shields.io/badge/Python_3.14-14191f?logo=python&logoColor=3776AB" alt="Python" /></a>
   <a href="https://www.postgresql.org/"><img src="https://img.shields.io/badge/PostgreSQL-14191f?logo=postgresql&logoColor=4169E1" alt="PostgreSQL" /></a>
+  <a href="https://www.pinecone.io/"><img src="https://img.shields.io/badge/Pinecone-14191f?logo=googledataflow&logoColor=6366F1" alt="Pinecone" /></a>
   <a href="https://www.anthropic.com/"><img src="https://img.shields.io/badge/Claude_AI-14191f?logo=anthropic&logoColor=D4A574" alt="Claude AI" /></a>
- 
+  <a href="https://www.rust-lang.org/"><img src="https://img.shields.io/badge/Rust_TUI-14191f?logo=rust&logoColor=CE412B" alt="Rust TUI" /></a>
+  <a href="https://www.docker.com/"><img src="https://img.shields.io/badge/Docker-14191f?logo=docker&logoColor=2496ED" alt="Docker" /></a>
+</p>
+
 An autonomous SQL agent for PostgreSQL, in your terminal.
 
 </div>
 
 ---
 
-Data-Spear answers questions about your database by **acting like an analyst, not a search box**: it plans, inspects schemas, runs live SQL, verifies its own results, and cites every claim. Retrieval (Pinecone) supplies context; the agent (Claude) treats the live database as the source of information.
+Data-Spear answers questions about your database by **acting like an analyst, not a search box**: it plans, inspects schemas, runs live SQL, verifies its own results, and cites every claim. Retrieval (Pinecone) supplies context; the agent (Claude) treats the live database as the source of truth.
 
 ```text
 Rust TUI ──HTTP/SSE──▶ FastAPI ──▶ Agent loop (Claude)
@@ -26,7 +30,7 @@ Rust TUI ──HTTP/SSE──▶ FastAPI ──▶ Agent loop (Claude)
 
 - **Live agent trace** — every tool call streams into the TUI as it happens (`✓ run_query SELECT … → 12 rows`) and stays as an audit log.
 - **Tiered SQL safety, enforced server-side** — reads run freely; bounded writes must be transaction-wrapped; destructive/DDL statements (`DROP`, `ALTER`, unbounded `UPDATE`/`DELETE`) are rejected unless you authorize the request with a `!` prefix.
-- **Connect at startup** — point the TUI at any local or hosted Postgres (NeonDB, RDS, …); credentials are validated before the chat opens.
+- **Connect at startup** — point the TUI at any local or hosted Postgres (Neon, Supabase, RDS, …); credentials are validated before the chat opens.
 - **Isolated retrieval** — vectors are namespaced per connected database, so context never leaks across databases.
 - **Guardrails** — per-statement timeout, automatic rollback of unwrapped writes, optional bearer-token auth on the API.
 
