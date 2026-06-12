@@ -21,7 +21,7 @@ _active_namespace: str | None = None
 
 
 def set_active_namespace(namespace: str) -> None:
-    global _active_namespace
+    global active_namespace
     _active_namespace = namespace
 
 
