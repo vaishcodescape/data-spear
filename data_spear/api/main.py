@@ -26,7 +26,7 @@ from vector_store import set_active_namespace  # noqa: E402
 
 
 def require_auth(authorization: str | None = Header(default=None)) -> None:
-    """Bearer-token gate; a no-op unless API_TOKEN is configured."""
+    # Bearer-token gate; a no-op unless API_TOKEN is configured.
     if not settings.api_token:
         return
     if authorization != f"Bearer {settings.api_token}":

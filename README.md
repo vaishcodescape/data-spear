@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="logo.png" alt="Data-Spear logo" width="140" />
+
 ### Data-Spear
 
 <p>
