@@ -107,7 +107,7 @@ Declare which tables to index in `SOURCES` ([data_spear/config.py](data_spear/co
 | `POST /ingest` | index configured `SOURCES` into Pinecone |
 | `GET /healthz` | liveness |
 
-## Example schema
+## Experimental schema
 
 A demo enterprise schema you can point Data-Spear at to try it out:
 
