@@ -47,8 +47,6 @@ Data-Spear answers questions about your database by **acting like an analyst, no
 <img src="./images/data_spear_architecture.png" alt="Data-Spear architecture" width="900" />
 </div>
 
-The editable source lives in [architecture.drawio](architecture.drawio) (open with [draw.io](https://app.diagrams.net/)).
-
 | Component | Path | Role |
 | --- | --- | --- |
 | Rust TUI | [data-spear-tui/](data-spear-tui/) | Connection screen, chat, live agent trace (SSE) |
