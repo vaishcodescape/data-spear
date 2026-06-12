@@ -41,6 +41,10 @@ class Settings(BaseSettings):
     # Integrated-inference embedding model hosted by Pinecone.
     embedding_model: str = "llama-text-embed-v2"
 
+    # Postgres
+    # Fallback DSN when /connect hasn't supplied one at runtime.
+    pg_dsn: str = "postgresql://localhost:5432/postgres"
+
     # Anthropic
     anthropic_api_key: str = ""
     answer_model: str = "claude-opus-4-8"

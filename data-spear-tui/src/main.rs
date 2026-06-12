@@ -1174,3 +1174,219 @@ fn render_footer(f: &mut Frame, area: Rect, app: &App) {
     };
     f.render_widget(Paragraph::new(two_sided(left, right, area.width)), area);
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // -- SSE contract: these JSON shapes are exactly what the FastAPI backend emits --
+
+    #[test]
+    fn deserializes_retrieval_event() {
+        let evt: AgentEvent = serde_json::from_str(r#"{"type":"retrieval","count":3}"#).unwrap();
+        assert!(matches!(evt, AgentEvent::Retrieval { count: 3 }));
+    }
+
+    #[test]
+    fn deserializes_thinking_event() {
+        let evt: AgentEvent =
+            serde_json::from_str(r#"{"type":"thinking","text":"planning"}"#).unwrap();
+        assert!(matches!(evt, AgentEvent::Thinking { text } if text == "planning"));
+    }
+
+    #[test]
+    fn deserializes_tool_use_with_and_without_detail() {
+        let evt: AgentEvent = serde_json::from_str(
+            r#"{"type":"tool_use","name":"run_query","detail":"SELECT 1"}"#,
+        )
+        .unwrap();
+        assert!(
+            matches!(evt, AgentEvent::ToolUse { name, detail } if name == "run_query" && detail == "SELECT 1")
+        );
+        // backend may omit detail (serde default)
+        let evt: AgentEvent =
+            serde_json::from_str(r#"{"type":"tool_use","name":"begin"}"#).unwrap();
+        assert!(matches!(evt, AgentEvent::ToolUse { detail, .. } if detail.is_empty()));
+    }
+
+    #[test]
+    fn deserializes_tool_result_event() {
+        let evt: AgentEvent = serde_json::from_str(
+            r#"{"type":"tool_result","name":"run_query","ok":false,"detail":"PermissionError: blocked"}"#,
+        )
+        .unwrap();
+        assert!(matches!(evt, AgentEvent::ToolResult { ok: false, .. }));
+    }
+
+    #[test]
+    fn deserializes_final_event_with_hits() {
+        let evt: AgentEvent = serde_json::from_str(
+            r#"{"type":"final","answer":"done","hits":[{"id":"t:1","score":0.9,"text":"alpha"}]}"#,
+        )
+        .unwrap();
+        match evt {
+            AgentEvent::Final { answer, hits } => {
+                assert_eq!(answer, "done");
+                assert_eq!(hits.len(), 1);
+                assert_eq!(hits[0].id, "t:1");
+            }
+            other => panic!("expected Final, got {:?}", other),
+        }
+    }
+
+    #[test]
+    fn deserializes_final_event_without_hits() {
+        let evt: AgentEvent =
+            serde_json::from_str(r#"{"type":"final","answer":"done"}"#).unwrap();
+        assert!(matches!(evt, AgentEvent::Final { hits, .. } if hits.is_empty()));
+    }
+
+    #[test]
+    fn deserializes_error_event() {
+        let evt: AgentEvent =
+            serde_json::from_str(r#"{"type":"error","message":"boom"}"#).unwrap();
+        assert!(matches!(evt, AgentEvent::Error { message } if message == "boom"));
+    }
+
+    // -- apply_event state machine --
+
+    fn app_with_pending() -> App {
+        let mut app = App::new("http://test".into());
+        app.status = Status::Querying;
+        app.pending = Some(PendingTurn {
+            question: "q".into(),
+            activity: Vec::new(),
+            started: Instant::now(),
+        });
+        app
+    }
+
+    #[test]
+    fn tool_result_fills_most_recent_inflight_call() {
+        let mut app = app_with_pending();
+        apply_event(
+            &mut app,
+            AgentEvent::ToolUse { name: "run_query".into(), detail: "SELECT 1".into() },
+        );
+        apply_event(
+            &mut app,
+            AgentEvent::ToolUse { name: "run_query".into(), detail: "SELECT 2".into() },
+        );
+        apply_event(
+            &mut app,
+            AgentEvent::ToolResult { name: "run_query".into(), ok: true, detail: "1 row".into() },
+        );
+        let activity = &app.pending.as_ref().unwrap().activity;
+        // the most recent in-flight call gets the result; the earlier one stays open
+        match (&activity[0], &activity[1]) {
+            (Activity::Tool { done: d0, .. }, Activity::Tool { done: d1, .. }) => {
+                assert!(d0.is_none());
+                assert_eq!(d1.as_ref().unwrap(), &(true, "1 row".to_string()));
+            }
+            _ => panic!("expected two tool activities"),
+        }
+    }
+
+    #[test]
+    fn final_event_completes_turn_and_counts_tools() {
+        let mut app = app_with_pending();
+        apply_event(&mut app, AgentEvent::Retrieval { count: 2 });
+        apply_event(
+            &mut app,
+            AgentEvent::ToolUse { name: "inspect_schema".into(), detail: String::new() },
+        );
+        apply_event(
+            &mut app,
+            AgentEvent::Final { answer: "the answer".into(), hits: Vec::new() },
+        );
+        assert!(app.pending.is_none());
+        assert_eq!(app.status, Status::Idle);
+        assert_eq!(app.messages.len(), 1);
+        let turn = &app.messages[0];
+        assert_eq!(turn.answer, "the answer");
+        assert_eq!(turn.question, "q");
+        assert_eq!(turn.tool_calls, 1); // retrieval is not a tool call
+        assert!(!turn.note);
+        assert_eq!(app.traces.len(), 1);
+        assert_eq!(app.traces[0].len(), 2);
+    }
+
+    #[test]
+    fn error_event_fails_pending_turn() {
+        let mut app = app_with_pending();
+        apply_event(&mut app, AgentEvent::Error { message: "db down".into() });
+        assert!(app.pending.is_none());
+        assert_eq!(app.status, Status::Error("db down".into()));
+        assert!(app.messages[0].answer.contains("db down"));
+    }
+
+    #[test]
+    fn events_without_pending_turn_are_ignored() {
+        let mut app = App::new("http://test".into());
+        apply_event(&mut app, AgentEvent::Retrieval { count: 5 });
+        apply_event(
+            &mut app,
+            AgentEvent::Final { answer: "orphan".into(), hits: Vec::new() },
+        );
+        assert!(app.messages.is_empty());
+        assert_eq!(app.status, Status::Idle);
+    }
+
+    // -- helpers --
+
+    #[test]
+    fn tool_count_only_counts_tools() {
+        let activity = vec![
+            Activity::Retrieval(3),
+            Activity::Thinking("hm".into()),
+            Activity::Tool { name: "a".into(), detail: String::new(), done: None },
+            Activity::Tool { name: "b".into(), detail: String::new(), done: Some((true, String::new())) },
+        ];
+        assert_eq!(tool_count(&activity), 2);
+    }
+
+    #[test]
+    fn truncate_is_char_safe() {
+        assert_eq!(truncate("hello", 10), "hello");
+        assert_eq!(truncate("hello", 5), "hello"); // exact fit, no ellipsis
+        assert_eq!(truncate("hello", 4), "hell…");
+        assert_eq!(truncate("héllo wörld", 5), "héllo…"); // multibyte must not panic
+        assert_eq!(truncate("", 5), "");
+    }
+
+    #[test]
+    fn spinner_frame_wraps_around() {
+        assert_eq!(spinner_frame(0), SPINNER[0]);
+        assert_eq!(spinner_frame(SPINNER.len()), SPINNER[0]);
+        assert_eq!(spinner_frame(SPINNER.len() + 3), SPINNER[3]);
+    }
+
+    #[test]
+    fn busy_reflects_status() {
+        let mut app = App::new("http://test".into());
+        assert!(!app.busy());
+        for status in [Status::Connecting, Status::Querying, Status::Ingesting] {
+            app.status = status;
+            assert!(app.busy());
+        }
+        app.status = Status::Error("x".into());
+        assert!(!app.busy());
+    }
+
+    #[test]
+    fn push_note_keeps_traces_parallel() {
+        let mut app = App::new("http://test".into());
+        app.push_note("hello");
+        assert_eq!(app.messages.len(), app.traces.len());
+        assert!(app.messages[0].note);
+    }
+
+    #[test]
+    fn centered_clamps_to_area() {
+        let area = Rect { x: 0, y: 0, width: 10, height: 4 };
+        let r = centered(area, 100, 100);
+        assert_eq!((r.width, r.height), (10, 4));
+        let r = centered(area, 4, 2);
+        assert_eq!((r.x, r.y, r.width, r.height), (3, 1, 4, 2));
+    }
+}
