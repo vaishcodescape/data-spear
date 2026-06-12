@@ -49,18 +49,7 @@ Data-Spear answers questions and automates your database by **acting like an ana
 </div>
 
 
-| Component | Path | Role |
-| --- | --- | --- |
-| Rust TUI | [data-spear-tui/](data-spear-tui/) | Connection screen, chat, live agent trace (SSE) |
-| API layer | [data_spear/api/main.py](data_spear/api/main.py) | FastAPI endpoints, bearer auth, active-DB switching |
-| RAG orchestrator | [data_spear/rag.py](data_spear/rag.py) | Combines retrieval hits with the agent run |
-| Agent loop | [data_spear/llm.py](data_spear/llm.py) | Data-Spear plan → act → observe → verify; SQL tools and tier enforcement |
-| Vector store | [data_spear/vector_store.py](data_spear/vector_store.py) | Pinecone client, per-DB namespacing, integrated embeddings |
-| Ingest pipeline | [data_spear/ingest.py](data_spear/ingest.py), [data_spear/chunker.py](data_spear/chunker.py) | Streams `SOURCES` rows, chunks them, upserts records |
-| DB access | [data_spear/db.py](data_spear/db.py) | psycopg2, per-process active DSN, row streaming |
-| Config | [data_spear/config.py](data_spear/config.py) | `.env` settings and `SOURCES` declarations |
-
-## SQL safety tiers
+## Postgres Guard Rails safety tiers
 
 | Tier | Statements | Policy |
 | --- | --- | --- |
