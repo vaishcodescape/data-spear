@@ -161,7 +161,7 @@ def query_stream(req: QueryRequest) -> StreamingResponse:
         raise HTTPException(status_code=400, detail="prompt is required")
     rag = _get_rag()
 
-    def gen(iterator: Iterator[dict]) -> Iterator[str]:
+    def gen() -> Iterator[str]:
         try:
             for evt in rag.answer_events(
                 req.prompt, top_k=req.top_k, allow_destructive=req.allow_destructive
@@ -185,9 +185,7 @@ def query_stream(req: QueryRequest) -> StreamingResponse:
             yield f"data: {json.dumps(payload)}\n\n"
 
     return StreamingResponse(
-        gen(rag.answer_events(
-            req.prompt, top_k=req.top_k, allow_destructive=req.allow_destructive
-        )),
+        gen(),
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )

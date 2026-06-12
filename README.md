@@ -55,7 +55,7 @@ The editable source lives in [architecture.drawio](architecture.drawio) (open wi
 | Rust TUI | [data-spear-tui/](data-spear-tui/) | Connection screen, chat, live agent trace (SSE) |
 | API layer | [data_spear/api/main.py](data_spear/api/main.py) | FastAPI endpoints, bearer auth, active-DB switching |
 | RAG orchestrator | [data_spear/rag.py](data_spear/rag.py) | Combines retrieval hits with the agent run |
-| Agent loop | [data_spear/llm.py](data_spear/llm.py) | Data-Spear → act → observe → verify; SQL tools and tier enforcement |
+| Agent loop | [data_spear/llm.py](data_spear/llm.py) | Data-Spear plan → act → observe → verify; SQL tools and tier enforcement |
 | Vector store | [data_spear/vector_store.py](data_spear/vector_store.py) | Pinecone client, per-DB namespacing, integrated embeddings |
 | Ingest pipeline | [data_spear/ingest.py](data_spear/ingest.py), [data_spear/chunker.py](data_spear/chunker.py) | Streams `SOURCES` rows, chunks them, upserts records |
 | DB access | [data_spear/db.py](data_spear/db.py) | psycopg2, per-process active DSN, row streaming |
@@ -145,6 +145,7 @@ All settings come from `.env` / environment (see [data_spear/config.py](data_spe
 The TUI reads `DATA_SPEAR_API` (default `http://localhost:8000`) and `DATA_SPEAR_API_TOKEN`.
 
 ## Docker
+
 
 ```bash
 docker build -t data-spear .
