@@ -153,11 +153,10 @@ def query(req: QueryRequest) -> QueryResponse:
 
 @app.post("/query/stream", dependencies=[Depends(require_auth)])
 def query_stream(req: QueryRequest) -> StreamingResponse:
-    """Run the agent and stream progress as Server-Sent Events.
+    # Run the agent and stream progress as Server-Sent Events.
 
-    Events mirror the agent loop: `retrieval`, `thinking`, `tool_use`,
-    `tool_result`, then a terminal `final` (or `error`).
-    """
+    # Events mirror the agent loop: `retrieval`, `thinking`, `tool_use`,
+    # `tool_result`, then a terminal `final` (or `error`).
     if not req.prompt.strip():
         raise HTTPException(status_code=400, detail="prompt is required")
     rag = _get_rag()

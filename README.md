@@ -7,6 +7,7 @@
 <p>
   <a href="https://www.python.org/"><img src="https://img.shields.io/badge/Python_3.14-14191f?logo=python&logoColor=3776AB" alt="Python" /></a>
   <a href="https://www.postgresql.org/"><img src="https://img.shields.io/badge/PostgreSQL-14191f?logo=postgresql&logoColor=4169E1" alt="PostgreSQL" /></a>
+  <a href="https://www.pinecone.io/"><img src="https://img.shields.io/badge/Pinecone-14191f?logo=googledataflow&logoColor=6366F1" alt="Pinecone" /></a>
   <a href="https://www.anthropic.com/"><img src="https://img.shields.io/badge/Claude_AI-14191f?logo=anthropic&logoColor=D4A574" alt="Claude AI" /></a>
   <a href="https://www.rust-lang.org/"><img src="https://img.shields.io/badge/Rust_TUI-14191f?logo=rust&logoColor=CE412B" alt="Rust TUI" /></a>
   <a href="https://www.docker.com/"><img src="https://img.shields.io/badge/Docker-14191f?logo=docker&logoColor=2496ED" alt="Docker" /></a>
@@ -18,7 +19,7 @@
 
 ---
 
-Data-Spear answers questions about your database by **acting like an analyst, not a search box**: it plans, inspects schemas, runs live SQL, verifies its own results, and cites every claim. Retrieval (Pinecone) supplies context; the agent (Claude) treats the live database as the source of truth.
+Data-Spear answers questions and automates your database by **acting like an analyst, not a search box**: it plans, inspects schemas, runs live SQL, verifies its own results, and cites every claim. Retrieval (Pinecone) supplies context; the agent treats the live database as the source of truth.
 
 ## Contents
 
@@ -28,6 +29,7 @@ Data-Spear answers questions about your database by **acting like an analyst, no
 - [Quickstart](#quickstart)
 - [TUI reference](#tui-reference)
 - [API](#api)
+- [Example schema](#example-schema)
 - [Configuration](#configuration)
 - [Docker](#docker)
 - [License](#license)
@@ -42,16 +44,18 @@ Data-Spear answers questions about your database by **acting like an analyst, no
 
 ## Architecture
 
-<div>
+<div align="center">
 <img src="./images/data_spear_architecture.png" alt="Data-Spear architecture" width="900" />
 </div>
+
+The editable source lives in [architecture.drawio](architecture.drawio) (open with [draw.io](https://app.diagrams.net/)).
 
 | Component | Path | Role |
 | --- | --- | --- |
 | Rust TUI | [data-spear-tui/](data-spear-tui/) | Connection screen, chat, live agent trace (SSE) |
 | API layer | [data_spear/api/main.py](data_spear/api/main.py) | FastAPI endpoints, bearer auth, active-DB switching |
 | RAG orchestrator | [data_spear/rag.py](data_spear/rag.py) | Combines retrieval hits with the agent run |
-| Agent loop | [data_spear/llm.py](data_spear/llm.py) | Claude plan → act → observe → verify; SQL tools and tier enforcement |
+| Agent loop | [data_spear/llm.py](data_spear/llm.py) | Data-Spear plan → act → observe → verify; SQL tools and tier enforcement |
 | Vector store | [data_spear/vector_store.py](data_spear/vector_store.py) | Pinecone client, per-DB namespacing, integrated embeddings |
 | Ingest pipeline | [data_spear/ingest.py](data_spear/ingest.py), [data_spear/chunker.py](data_spear/chunker.py) | Streams `SOURCES` rows, chunks them, upserts records |
 | DB access | [data_spear/db.py](data_spear/db.py) | psycopg2, per-process active DSN, row streaming |
@@ -95,7 +99,19 @@ Enter your database credentials on the connection screen (defaults target `local
 
 Declare which tables to index in `SOURCES` ([data_spear/config.py](data_spear/config.py)), then run `/ingest` from the TUI. The agent works without ingestion — it just leans on live queries instead of retrieval.
 
-## API Endpoints
+## TUI reference
+
+| Input | Action |
+| --- | --- |
+| `Enter` | send prompt |
+| `! <prompt>` | send with destructive-SQL authorization (Tier 2) |
+| `/help` `/clear` `/trace` `/ingest` | commands |
+| `↑` / `↓` | prompt history |
+| `PgUp` / `PgDn` | scroll transcript |
+| `Ctrl+T` / `Ctrl+L` | toggle trace / clear conversation |
+| `Esc` | clear input, quit when empty |
+
+## API
 
 | Endpoint | Purpose |
 | --- | --- |
@@ -105,20 +121,38 @@ Declare which tables to index in `SOURCES` ([data_spear/config.py](data_spear/co
 | `POST /ingest` | index configured `SOURCES` into Pinecone |
 | `GET /healthz` | liveness |
 
-### Example database schema
+## Example schema
 
-A demo schema you can point Data-Spear at:
+A demo enterprise schema you can point Data-Spear at to try it out:
 
-<div>
-<img src="./images/database-schema.jpeg" alt="demo-schema" width="860" />
+<div align="center">
+<img src="./images/database-schema.jpeg" alt="Demo database schema" width="860" />
 </div>
+
+## Configuration
+
+All settings come from `.env` / environment (see [data_spear/config.py](data_spear/config.py)):
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `PG_DSN` | local postgres | fallback DSN when `/connect` isn't used |
+| `PINECONE_API_KEY` / `PINECONE_INDEX` | — / `data-spear` | vector store |
+| `ANTHROPIC_API_KEY` / `ANSWER_MODEL` | — / `claude-opus-4-8` | agent model |
+| `TOP_K` | `6` | retrieved chunks per query |
+| `API_TOKEN` | empty (off) | bearer-token auth |
+| `STATEMENT_TIMEOUT_MS` | `30000` | cap on each SQL statement the agent runs |
+
+The TUI reads `DATA_SPEAR_API` (default `http://localhost:8000`) and `DATA_SPEAR_API_TOKEN`.
+
+## Docker
+
 
 ```bash
 docker build -t data-spear .
 docker run --rm -p 8000:8000 --env-file .env data-spear
 ```
 
-> Keep `UVICORN_WORKERS=1` — the active database connection is per-process state.
+Keep `UVICORN_WORKERS=1` — the active database connection is per-process state.
 
 ## License
 
