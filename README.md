@@ -7,7 +7,6 @@
 <p>
   <a href="https://www.python.org/"><img src="https://img.shields.io/badge/Python_3.14-14191f?logo=python&logoColor=3776AB" alt="Python" /></a>
   <a href="https://www.postgresql.org/"><img src="https://img.shields.io/badge/PostgreSQL-14191f?logo=postgresql&logoColor=4169E1" alt="PostgreSQL" /></a>
-  <a href="https://www.pinecone.io/"><img src="https://img.shields.io/badge/Pinecone-14191f?logo=googledataflow&logoColor=6366F1" alt="Pinecone" /></a>
   <a href="https://www.anthropic.com/"><img src="https://img.shields.io/badge/Claude_AI-14191f?logo=anthropic&logoColor=D4A574" alt="Claude AI" /></a>
   <a href="https://www.rust-lang.org/"><img src="https://img.shields.io/badge/Rust_TUI-14191f?logo=rust&logoColor=CE412B" alt="Rust TUI" /></a>
   <a href="https://www.docker.com/"><img src="https://img.shields.io/badge/Docker-14191f?logo=docker&logoColor=2496ED" alt="Docker" /></a>
