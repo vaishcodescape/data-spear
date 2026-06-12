@@ -96,19 +96,7 @@ Enter your database credentials on the connection screen (defaults target `local
 
 Declare which tables to index in `SOURCES` ([data_spear/config.py](data_spear/config.py)), then run `/ingest` from the TUI. The agent works without ingestion — it just leans on live queries instead of retrieval.
 
-## TUI reference
-
-| Input | Action |
-| --- | --- |
-| `Enter` | send prompt |
-| `! <prompt>` | send with destructive-SQL authorization (Tier 2) |
-| `/help` `/clear` `/trace` `/ingest` | commands |
-| `↑` / `↓` | prompt history |
-| `PgUp` / `PgDn` | scroll transcript |
-| `Ctrl+T` / `Ctrl+L` | toggle trace / clear conversation |
-| `Esc` | clear input, quit when empty |
-
-## API
+## API Endpoints
 
 | Endpoint | Purpose |
 | --- | --- |
@@ -118,8 +106,6 @@ Declare which tables to index in `SOURCES` ([data_spear/config.py](data_spear/co
 | `POST /ingest` | index configured `SOURCES` into Pinecone |
 | `GET /healthz` | liveness |
 
-Set `API_TOKEN` in `.env` to require `Authorization: Bearer …` on all endpoints (the TUI sends it from `DATA_SPEAR_API_TOKEN`).
-
 ### Example database schema
 
 A demo schema you can point Data-Spear at:
@@ -127,23 +113,6 @@ A demo schema you can point Data-Spear at:
 <div>
 <img src="./images/database-schema.jpeg" alt="demo-schema" width="860" />
 </div>
-
-## Configuration
-
-All settings come from `.env` / environment (see [data_spear/config.py](data_spear/config.py)):
-
-| Variable | Default | Purpose |
-| --- | --- | --- |
-| `PG_DSN` | local postgres | fallback DSN when `/connect` isn't used |
-| `PINECONE_API_KEY` / `PINECONE_INDEX` | — / `data-spear` | vector store |
-| `ANTHROPIC_API_KEY` / `ANSWER_MODEL` | — / `claude-opus-4-8` | agent model |
-| `TOP_K` | `6` | retrieved chunks per query |
-| `API_TOKEN` | empty (off) | bearer-token auth |
-| `STATEMENT_TIMEOUT_MS` | `30000` | cap on each SQL statement the agent runs |
-
-The TUI reads `DATA_SPEAR_API` (default `http://localhost:8000`) and `DATA_SPEAR_API_TOKEN`.
-
-## Docker
 
 ```bash
 docker build -t data-spear .
