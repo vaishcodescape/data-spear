@@ -99,7 +99,7 @@ Enter your database credentials on the connection screen (defaults target `local
 
 Declare which tables to index in `SOURCES` ([data_spear/config.py](data_spear/config.py)), then run `/ingest` from the TUI. The agent works without ingestion — it just leans on live queries instead of retrieval.
 
-## TUI reference
+## TUI Commands
 
 | Input | Action |
 | --- | --- |
@@ -111,7 +111,7 @@ Declare which tables to index in `SOURCES` ([data_spear/config.py](data_spear/co
 | `Ctrl+T` / `Ctrl+L` | toggle trace / clear conversation |
 | `Esc` | clear input, quit when empty |
 
-## API
+## API Endpoints
 
 | Endpoint | Purpose |
 | --- | --- |
