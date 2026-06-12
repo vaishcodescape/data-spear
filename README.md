@@ -127,10 +127,7 @@ All settings come from `.env` / environment (see [data_spear/config.py](data_spe
 | `PINECONE_API_KEY` / `PINECONE_INDEX` | — / `data-spear` | vector store |
 | `ANTHROPIC_API_KEY` / `ANSWER_MODEL` | — / `claude-opus-4-8` | agent model |
 | `TOP_K` | `6` | retrieved chunks per query |
-| `API_TOKEN` | empty (off) | bearer-token auth |
 | `STATEMENT_TIMEOUT_MS` | `30000` | cap on each SQL statement the agent runs |
-
-The TUI reads `DATA_SPEAR_API` (default `http://localhost:8000`) and `DATA_SPEAR_API_TOKEN`.
 
 ## Docker
 
@@ -139,8 +136,6 @@ The TUI reads `DATA_SPEAR_API` (default `http://localhost:8000`) and `DATA_SPEAR
 docker build -t data-spear .
 docker run --rm -p 8000:8000 --env-file .env data-spear
 ```
-
-Keep `UVICORN_WORKERS=1` — the active database connection is per-process state.
 
 ## License
 
