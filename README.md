@@ -25,10 +25,8 @@ Data-Spear answers questions and automates your database by **acting like an ana
 
 - [Features](#features)
 - [Architecture](#architecture)
-- [SQL safety tiers](#sql-safety-tiers)
 - [Quickstart](#quickstart)
 - [TUI reference](#tui-reference)
-- [API](#api)
 - [Example schema](#example-schema)
 - [Configuration](#configuration)
 - [Docker](#docker)
