@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="images/logo.png" alt="Data-Spear logo" width="140" />
+<img src="images/data-spear.png" alt="Data-Spear logo" width="140" />
 
 # Data-Spear
 
@@ -22,14 +22,18 @@ Data-Spear answers questions and automates your database by **acting like an ana
 
 ## Contents
 
-- [Features](#features)
-- [Architecture](#architecture)
-- [Quickstart](#quickstart)
-- [TUI reference](#tui-reference)
-- [Example schema](#example-schema)
-- [Configuration](#configuration)
-- [Docker](#docker)
-- [License](#license)
+- [Data-Spear](#data-spear)
+  - [Contents](#contents)
+  - [Features](#features)
+  - [Architecture](#architecture)
+  - [Postgres Guard Rails safety tiers](#postgres-guard-rails-safety-tiers)
+  - [Quickstart](#quickstart)
+  - [TUI Commands](#tui-commands)
+  - [API Endpoints](#api-endpoints)
+  - [Experimental schema](#experimental-schema)
+  - [Configuration](#configuration)
+  - [Docker](#docker)
+  - [License](#license)
 
 ## Features
 
