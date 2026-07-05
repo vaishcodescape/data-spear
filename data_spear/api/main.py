@@ -1,4 +1,4 @@
-# FastAPI service exposing the Python agent to the Rust TUI.
+# FastAPI service exposing the Python agent to the bash CLI (scripts/data-spear.sh).
 from __future__ import annotations
 
 import sys
@@ -68,7 +68,7 @@ class QueryRequest(BaseModel):
     prompt: str
     top_k: int | None = None
     # User authorization for Tier 2 SQL (DDL, unbounded writes). Must come from a
-    # deliberate user action (the TUI's `!` prefix), never set by default.
+    # deliberate user action (the CLI's `!` prefix / --destructive flag), never set by default.
     allow_destructive: bool = False
 
 

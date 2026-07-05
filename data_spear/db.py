@@ -11,7 +11,7 @@ from psycopg2 import sql as pgsql
 from config import settings
 
 
-# DSN chosen at runtime (e.g. credentials the user entered in the TUI). When unset,
+# DSN chosen at runtime (e.g. credentials the user entered via the CLI). When unset,
 # we fall back to the static value from .env / config.
 _active_dsn: str | None = None
 

@@ -8,7 +8,7 @@
   <a href="https://www.python.org/"><img src="https://img.shields.io/badge/Python_3.14-14191f?logo=python&logoColor=3776AB" alt="Python" /></a>
   <a href="https://www.postgresql.org/"><img src="https://img.shields.io/badge/PostgreSQL-14191f?logo=postgresql&logoColor=4169E1" alt="PostgreSQL" /></a>
   <a href="https://www.anthropic.com/"><img src="https://img.shields.io/badge/Claude_AI-14191f?logo=anthropic&logoColor=D4A574" alt="Claude AI" /></a>
-  <a href="https://www.rust-lang.org/"><img src="https://img.shields.io/badge/Rust_TUI-14191f?logo=rust&logoColor=CE412B" alt="Rust TUI" /></a>
+  <a href="https://www.gnu.org/software/bash/"><img src="https://img.shields.io/badge/Bash_CLI-14191f?logo=gnubash&logoColor=4EAA25" alt="Bash CLI" /></a>
   <a href="https://www.docker.com/"><img src="https://img.shields.io/badge/Docker-14191f?logo=docker&logoColor=2496ED" alt="Docker" /></a>
 </p>
 
@@ -28,7 +28,7 @@ Data-Spear answers questions and automates your database by **acting like an ana
   - [Architecture](#architecture)
   - [Postgres Guard Rails safety tiers](#postgres-guard-rails-safety-tiers)
   - [Quickstart](#quickstart)
-  - [TUI Commands](#tui-commands)
+  - [CLI Commands](#cli-commands)
   - [API Endpoints](#api-endpoints)
   - [Experimental schema](#experimental-schema)
   - [Configuration](#configuration)
@@ -37,9 +37,9 @@ Data-Spear answers questions and automates your database by **acting like an ana
 
 ## Features
 
-- **Live agent trace** — every tool call streams into the TUI as it happens (`✓ run_query SELECT … → 12 rows`) and stays as an audit log.
+- **Live agent trace** — every tool call streams into the terminal as it happens (`✓ run_query SELECT … → 12 rows`) and stays as an audit log.
 - **Tiered SQL safety, enforced server-side** — reads run freely; bounded writes must be transaction-wrapped; destructive/DDL statements are rejected unless you explicitly authorize them. See [SQL safety tiers](#sql-safety-tiers).
-- **Connect at startup** — point the TUI at any local or hosted Postgres (Neon, Supabase, RDS, …); credentials are validated before the chat opens.
+- **Connect at startup** — point the CLI at any local or hosted Postgres (Neon, Supabase, RDS, …); credentials are validated before the chat opens.
 - **Isolated retrieval** — vectors are namespaced per connected database, so context never leaks across databases.
 - **Guardrails** — per-statement timeout, automatic rollback of unwrapped writes, optional bearer-token auth on the API.
 
@@ -62,7 +62,7 @@ Enforcement happens server-side in the agent's tool dispatcher — the model can
 
 ## Quickstart
 
-Requirements: Python 3.14+, Rust toolchain, a PostgreSQL database, [Pinecone](https://www.pinecone.io/) and [Anthropic](https://console.anthropic.com/) API keys.
+Requirements: Python 3.14+, `curl` and `jq`, a PostgreSQL database, [Pinecone](https://www.pinecone.io/) and [Anthropic](https://console.anthropic.com/) API keys.
 
 **1. Server**
 
@@ -72,33 +72,39 @@ python3 -m venv .venv
 
 cp .env.example .env          # fill in PINECONE_API_KEY and ANTHROPIC_API_KEY
 
-.venv/bin/uvicorn data_spear.api.main:app --port 8000
+./scripts/data-spear.sh serve
 ```
 
-**2. TUI** (separate terminal)
+**2. CLI** (separate terminal)
 
 ```bash
-cd data-spear-tui
-cargo run --release
+./scripts/data-spear.sh chat
 ```
 
-Enter your database credentials on the connection screen (defaults target `localhost:5432/postgres`), then ask away.
+Enter your database credentials at the connection prompt (defaults target `localhost:5432/postgres`), then ask away. For scripting, skip the REPL and use one-shot commands:
+
+```bash
+./scripts/data-spear.sh connect --host db.example.com --dbname sales --user me --password secret
+./scripts/data-spear.sh ask "how many orders shipped in the last 7 days?"
+```
 
 **3. Optional: ingest context**
 
-Declare which tables to index in `SOURCES` ([data_spear/config.py](data_spear/config.py)), then run `/ingest` from the TUI. The agent works without ingestion — it just leans on live queries instead of retrieval.
+Declare which tables to index in `SOURCES` ([data_spear/config.py](data_spear/config.py)), then run `/ingest` from the chat REPL (or `./scripts/data-spear.sh ingest`). The agent works without ingestion — it just leans on live queries instead of retrieval.
 
-## TUI Commands
+## CLI Commands
 
-| Input | Action |
+| Command | Action |
 | --- | --- |
-| `Enter` | send prompt |
-| `! <prompt>` | send with destructive-SQL authorization (Tier 2) |
-| `/help` `/clear` `/trace` `/ingest` | commands |
-| `↑` / `↓` | prompt history |
-| `PgUp` / `PgDn` | scroll transcript |
-| `Ctrl+T` / `Ctrl+L` | toggle trace / clear conversation |
-| `Esc` | clear input, quit when empty |
+| `serve [port]` | start the API server (default port 8000) |
+| `connect [--dsn URL \| --host … --dbname …]` | set the active database; interactive when run without flags |
+| `ask "prompt"` | one-shot question with a live agent trace |
+| `ask --destructive "prompt"` | authorize destructive SQL for this request (Tier 2) |
+| `chat` | interactive REPL (`/help`, `/ingest`, `/connect`, `/quit`; `! <prompt>` authorizes Tier 2 SQL) |
+| `ingest` | index configured `SOURCES` into Pinecone |
+| `health` | check the API is reachable |
+
+Set `DATA_SPEAR_API` to target a non-default API URL and `DATA_SPEAR_API_TOKEN` if the server requires a bearer token.
 
 ## API Endpoints
 
