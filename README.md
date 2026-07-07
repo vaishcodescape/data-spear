@@ -147,8 +147,7 @@ TOP_K=6
 STATEMENT_TIMEOUT_MS=30000
 ```
 
-```
-## Docker
+## Docker Config
 
 
 ```bash
