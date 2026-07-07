@@ -128,14 +128,26 @@ A demo enterprise schema you can point Data-Spear at to try it out:
 
 All settings come from `.env` / environment (see [data_spear/config.py](data_spear/config.py)):
 
-| Variable | Default | Purpose |
-| --- | --- | --- |
-| `PG_DSN` | local postgres | fallback DSN when `/connect` isn't used |
-| `PINECONE_API_KEY` / `PINECONE_INDEX` | — / `data-spear` | vector store |
-| `ANTHROPIC_API_KEY` / `ANSWER_MODEL` | — / `claude-opus-4-8` | agent model |
-| `TOP_K` | `6` | retrieved chunks per query |
-| `STATEMENT_TIMEOUT_MS` | `30000` | cap on each SQL statement the agent runs |
+```bash
+# PostgreSQL
+PG_DSN=postgresql://user:password@localhost:5432/database
 
+# Pinecone
+PINECONE_API_KEY=your_pinecone_api_key
+PINECONE_INDEX=data-spear
+
+# Anthropic
+ANTHROPIC_API_KEY=your_anthropic_api_key
+ANSWER_MODEL=claude-opus-4-8
+
+# Retrieval
+TOP_K=6
+
+# SQL execution timeout (milliseconds)
+STATEMENT_TIMEOUT_MS=30000
+```
+
+```
 ## Docker
 
 
