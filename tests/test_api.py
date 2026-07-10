@@ -3,9 +3,9 @@ import json
 import pytest
 from fastapi.testclient import TestClient
 
-import api.main as main
-from config import settings
-from rag import RAGAnswer
+import data_spear.api.main as main
+from data_spear.config import settings
+from data_spear.rag import RAGAnswer
 
 HITS = [{"id": "t:1", "score": 0.9, "fields": {"chunk_text": "alpha"}}]
 

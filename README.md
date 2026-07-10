@@ -5,7 +5,8 @@
 # Data-Spear
 
 <p>
-  <a href="https://www.python.org/"><img src="https://img.shields.io/badge/Python_3.14-14191f?logo=python&logoColor=3776AB" alt="Python" /></a>
+  <a href="https://github.com/vaishcodescape/data-spear/actions/workflows/ci.yml"><img src="https://github.com/vaishcodescape/data-spear/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
+  <a href="https://www.python.org/"><img src="https://img.shields.io/badge/Python_3.11+-14191f?logo=python&logoColor=3776AB" alt="Python" /></a>
   <a href="https://www.postgresql.org/"><img src="https://img.shields.io/badge/PostgreSQL-14191f?logo=postgresql&logoColor=4169E1" alt="PostgreSQL" /></a>
   <a href="https://www.anthropic.com/"><img src="https://img.shields.io/badge/Claude_AI-14191f?logo=anthropic&logoColor=D4A574" alt="Claude AI" /></a>
   <a href="https://www.gnu.org/software/bash/"><img src="https://img.shields.io/badge/Bash_CLI-14191f?logo=gnubash&logoColor=4EAA25" alt="Bash CLI" /></a>
@@ -18,7 +19,7 @@
 
 ---
 
-Data-Spear answers questions and automates your database by **acting like an analyst, not a search box**: it plans, inspects schemas, runs live SQL, verifies its own results, and cites every claim. Retrieval (Pinecone) supplies context the agent treats the live database as the source of truth.
+Data-Spear answers questions and automates your database by **acting like an analyst, not a search box**: it plans, inspects schemas, runs live SQL, verifies its own results, and cites every claim. Retrieval (Pinecone) supplies context, but the agent always treats the live database as the source of truth.
 
 ## Contents
 
@@ -33,12 +34,13 @@ Data-Spear answers questions and automates your database by **acting like an ana
   - [Experimental schema](#experimental-schema)
   - [Configuration](#configuration)
   - [Docker](#docker)
+  - [Development](#development)
   - [License](#license)
 
 ## Features
 
 - **Live agent trace** — every tool call streams into the terminal as it happens (`✓ run_query SELECT … → 12 rows`) and stays as an audit log.
-- **Tiered SQL safety, enforced server-side** — reads run freely; bounded writes must be transaction-wrapped; destructive/DDL statements are rejected unless you explicitly authorize them. See [SQL safety tiers](#sql-safety-tiers).
+- **Tiered SQL safety, enforced server-side** — reads run freely; bounded writes must be transaction-wrapped; destructive/DDL statements are rejected unless you explicitly authorize them. See [safety tiers](#postgres-guard-rails-safety-tiers).
 - **Connect at startup** — point the CLI at any local or hosted Postgres (Neon, Supabase, RDS, …); credentials are validated before the chat opens.
 - **Isolated retrieval** — vectors are namespaced per connected database, so context never leaks across databases.
 - **Guardrails** — per-statement timeout, automatic rollback of unwrapped writes, optional bearer-token auth on the API.
@@ -58,19 +60,19 @@ Data-Spear answers questions and automates your database by **acting like an ana
 | Bounded write | `INSERT` / `UPDATE` / `DELETE` with a `WHERE` clause | Must be wrapped in `begin` … `commit`; unwrapped writes are rolled back automatically |
 | Destructive (Tier 2) | DDL (`DROP`, `ALTER`, `CREATE`, `TRUNCATE`, `GRANT`, …) and `UPDATE` / `DELETE` without `WHERE` | Rejected unless the prompt is sent with a `!` prefix |
 
-Enforcement happens server-side in the agent's tool dispatcher — the model cannot bypass it.
+Enforcement happens server-side in the agent's tool dispatcher — the model cannot bypass it. As a hard backstop, every database session is opened **READ ONLY**; the read-write mode is lifted only inside an explicit `begin`, so any write the keyword scan misses (e.g. a data-modifying CTE) is still refused by Postgres itself. For real isolation, connect Data-Spear with a least-privilege role — in-app tiers are a guardrail, database grants are the boundary.
 
 ## Quickstart
 
-Requirements: Python 3.14+, `curl` and `jq`, a PostgreSQL database, [Pinecone](https://www.pinecone.io/) and [Anthropic](https://console.anthropic.com/) API keys.
+Requirements: Python 3.11+, `curl` and `jq`, a PostgreSQL database, [Pinecone](https://www.pinecone.io/) and [Anthropic](https://console.anthropic.com/) API keys.
 
 **1. Server**
 
 ```bash
 python3 -m venv .venv
-.venv/bin/pip install -r requirements.txt
+.venv/bin/pip install -e .
 
-cp .env.example .env          # fill in PINECONE_API_KEY and ANTHROPIC_API_KEY
+cp .env.example .env          # fill in ANTHROPIC_API_KEY and PINECONE_API_KEY
 
 ./scripts/data-spear.sh serve
 ```
@@ -139,21 +141,48 @@ PINECONE_INDEX=data-spear
 # Anthropic
 ANTHROPIC_API_KEY=your_anthropic_api_key
 ANSWER_MODEL=claude-opus-4-8
+ANSWER_MAX_TOKENS=2048        # max output tokens per agent turn
+MAX_AGENT_TURNS=12            # hard cap on agent-loop turns
 
 # Retrieval
 TOP_K=6
 
 # SQL execution timeout (milliseconds)
 STATEMENT_TIMEOUT_MS=30000
+
+# API auth (optional) — when set, every endpoint except /healthz requires
+# `Authorization: Bearer <token>`.
+API_TOKEN=
 ```
 
-## Docker Config
+## Docker
 
+Build and run the API, then point it at your database from the CLI's `connect`:
 
 ```bash
 docker build -t data-spear .
 docker run --rm -p 8000:8000 --env-file .env data-spear
 ```
+
+Or bring up the API alongside a throwaway Postgres with Compose:
+
+```bash
+docker compose up --build
+```
+
+The server runs a **single worker** by default: it holds one active database connection in per-process state, so `connect` and the queries that follow must reach the same worker. Only raise `UVICORN_WORKERS` if every request is independently connected.
+
+## Development
+
+```bash
+python3 -m venv .venv
+.venv/bin/pip install -e ".[dev]"   # runtime deps + pytest, httpx, ruff
+
+.venv/bin/pytest                    # run the test suite
+.venv/bin/ruff check .              # lint
+```
+
+CI runs the same lint and tests on every push and pull request (Python 3.11–3.13).
 
 ## License
 

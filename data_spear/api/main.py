@@ -1,28 +1,21 @@
 # FastAPI service exposing the Python agent to the bash CLI (scripts/data-spear.sh).
 from __future__ import annotations
 
-import sys
-from pathlib import Path
+import json
+import re
+from collections.abc import Iterator
 
-# The package modules import each other flat (`import rag`, `import db`, ...),
-# so put the package directory itself on sys.path — works from any cwd.
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+import psycopg2
+import psycopg2.extensions
+from fastapi import Depends, FastAPI, Header, HTTPException
+from fastapi.responses import StreamingResponse
+from pydantic import BaseModel
 
-import json  # noqa: E402
-import re  # noqa: E402
-from typing import Iterator  # noqa: E402
-
-import psycopg2  # noqa: E402
-import psycopg2.extensions  # noqa: E402
-from fastapi import Depends, FastAPI, Header, HTTPException  # noqa: E402
-from fastapi.responses import StreamingResponse  # noqa: E402
-from pydantic import BaseModel  # noqa: E402
-
-from config import settings  # noqa: E402
-from db import set_active_dsn  # noqa: E402
-from ingest import ingest_all  # noqa: E402
-from rag import RAG  # noqa: E402
-from vector_store import set_active_namespace  # noqa: E402
+from data_spear.config import settings
+from data_spear.db import set_active_dsn
+from data_spear.ingest import ingest_all
+from data_spear.rag import RAG
+from data_spear.vector_store import set_active_namespace
 
 
 def require_auth(authorization: str | None = Header(default=None)) -> None:
@@ -43,7 +36,7 @@ def _get_rag() -> RAG:
         try:
             _rag = RAG()
         except RuntimeError as e:  # missing PINECONE/ANTHROPIC key
-            raise HTTPException(status_code=503, detail=str(e))
+            raise HTTPException(status_code=503, detail=str(e)) from e
     return _rag
 
 
@@ -115,7 +108,7 @@ def connect_db(req: ConnectRequest) -> ConnectResponse:
         finally:
             conn.close()
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"could not connect: {e}")
+        raise HTTPException(status_code=400, detail=f"could not connect: {e}") from e
 
     database = str(row[0]) if row else req.dbname
     version = str(row[1]) if row else ""
@@ -125,7 +118,10 @@ def connect_db(req: ConnectRequest) -> ConnectResponse:
     # never served as context for another. New DB identity = fresh namespace
     # (which starts empty until /ingest runs against it).
     info = psycopg2.extensions.parse_dsn(dsn)
-    raw_ns = f"{info.get('host', 'local')}-{info.get('port', '5432')}-{info.get('dbname', database)}"
+    raw_ns = (
+        f"{info.get('host', 'local')}-{info.get('port', '5432')}-"
+        f"{info.get('dbname', database)}"
+    )
     set_active_namespace(re.sub(r"[^a-zA-Z0-9_-]", "-", raw_ns))
 
     server = version.split(" on ", 1)[0] if version else "PostgreSQL"
@@ -196,4 +192,20 @@ def ingest() -> dict[str, int]:
     try:
         return ingest_all()
     except RuntimeError as e:  # e.g. no SOURCES configured
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+
+def run() -> None:
+    # Console-script entry point (`data-spear-server`). The agent keeps the active
+    # database connection in per-process state, so the server runs single-worker by
+    # default; override HOST / PORT / UVICORN_WORKERS via the environment.
+    import os
+
+    import uvicorn
+
+    uvicorn.run(
+        "data_spear.api.main:app",
+        host=os.environ.get("HOST", "127.0.0.1"),
+        port=int(os.environ.get("PORT", "8000")),
+        workers=int(os.environ.get("UVICORN_WORKERS", "1")),
+    )

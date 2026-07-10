@@ -1,5 +1,5 @@
-import db
-from config import settings
+import data_spear.db as db
+from data_spear.config import settings
 
 
 def test_active_dsn_falls_back_to_settings(monkeypatch):

@@ -1,13 +1,12 @@
 from __future__ import annotations
 
 import time
-from typing import Iterable
+from collections.abc import Iterable
 
 from pinecone import Pinecone
 from pinecone.exceptions import NotFoundException
 
-from config import settings
-
+from data_spear.config import settings
 
 # Field map convention: every record stores its text in `chunk_text`.
 # Pinecone's integrated inference embeds this field server-side.
@@ -90,7 +89,10 @@ class VectorStore:
             )
         except NotFoundException:
             return []
-        hits = result.get("result", {}).get("hits", []) if isinstance(result, dict) else result.result.hits
+        if isinstance(result, dict):
+            hits = result.get("result", {}).get("hits", [])
+        else:
+            hits = result.result.hits
         out: list[dict] = []
         for hit in hits:
             # SDK returns objects in newer versions; normalize to dicts.

@@ -1,11 +1,11 @@
 #RAG: Retrieval-Augmented Generation for Data-Spear
 from __future__ import annotations
 
+from collections.abc import Iterator
 from dataclasses import dataclass
-from typing import Iterator
 
-from llm import LLM
-from vector_store import VectorStore
+from data_spear.llm import LLM
+from data_spear.vector_store import VectorStore
 
 
 @dataclass

@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-from typing import Iterator
+from collections.abc import Iterator
 
-from config import DocumentSource, RowSource, Source, SOURCES
-from chunker import chunk_text, serialize_row
-from db import stream_rows
-from vector_store import TEXT_FIELD, VectorStore
+from data_spear.chunker import chunk_text, serialize_row
+from data_spear.config import SOURCES, DocumentSource, RowSource, Source
+from data_spear.db import stream_rows
+from data_spear.vector_store import TEXT_FIELD, VectorStore
 
 
 def _records_for_row_source(src: RowSource) -> Iterator[dict]:

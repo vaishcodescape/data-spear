@@ -1,15 +1,14 @@
 from __future__ import annotations
 
+from collections.abc import Iterator
 from contextlib import contextmanager
-from typing import Iterator
 from uuid import uuid4
 
 import psycopg2
 import psycopg2.extras
 from psycopg2 import sql as pgsql
 
-from config import settings
-
+from data_spear.config import settings
 
 # DSN chosen at runtime (e.g. credentials the user entered via the CLI). When unset,
 # we fall back to the static value from .env / config.

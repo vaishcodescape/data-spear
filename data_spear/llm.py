@@ -3,16 +3,16 @@ from __future__ import annotations
 
 import json
 import re
-from typing import Any, Iterator, cast
+from collections.abc import Iterator
+from typing import Any, cast
 
 import psycopg2
 import psycopg2.extras
 from anthropic import Anthropic
 from anthropic.types import TextBlock, ToolUseBlock
 
-from config import settings
-from db import active_dsn
-
+from data_spear.config import settings
+from data_spear.db import active_dsn
 
 SYSTEM_PROMPT = """\
 You are Data-Spear, an autonomous data agent over a PostgreSQL database. You receive a task and, on turns where retrieval ran, `<context>` — chunks from a vector index tagged `[table:id]` or `[table:id:chunk]` with similarity scores. You work in a loop — plan, act, observe, adapt — issuing as many tool calls across as many steps as the task requires, until it is complete or a stop condition fires.
@@ -35,7 +35,7 @@ Stop and report — don't spin — when any of these hits:
 - A Tier 2 gate needs user confirmation.
 - A permission error blocks the remaining path.
 - Evidence shows the task is impossible or ill-posed as stated.
-- Soft budget exceeded (~15 tool calls per task): pause, summarize what's done and what remains, propose how to proceed.
+- Soft budget exceeded (~12 steps per task): pause, summarize what's done and what remains, propose how to proceed.
 
 Never retry an identical failing statement more than once. Do exactly what was asked: note adjacent problems you discover (missing index, suspect data) in the final report, but don't fix them unrequested.
 
@@ -52,7 +52,7 @@ If retrieval returned `(no context retrieved)`, say so and proceed via tools.
 ## Operation tiers (every statement you issue)
 
 - **Tier 0 — read-only.** `SELECT`, `EXPLAIN`, catalog queries. Execute directly; cap exploratory reads with `LIMIT`.
-- **Tier 1 — bounded mutation.** `INSERT`; `UPDATE`/`DELETE` with `WHERE`. Estimate affected rows via `SELECT COUNT(*)`, `begin`, execute, `commit` only if actual matches estimate — otherwise `rollback` and report the discrepancy.
+- **Tier 1 — bounded mutation.** `INSERT`; `UPDATE`/`DELETE` with `WHERE`. The connection is READ ONLY until you `begin`, so any write issued without one is rejected by Postgres — always `begin` first. Estimate affected rows via `SELECT COUNT(*)`, `begin`, execute, `commit` only if actual matches estimate — otherwise `rollback` and report the discrepancy.
 - **Tier 2 — destructive, structural, or unbounded.** `DROP`, `TRUNCATE`, `ALTER`, `CREATE`, migrations, `UPDATE`/`DELETE` without `WHERE`, bulk ops, constraint/index/grant changes. Hard pause: present the exact statement(s), scope, and reversibility, then stop and await explicit confirmation. Batch related Tier 2 statements into a single confirmation when they serve one stated intent. Confirmation covers only the statements shown — anything that changes must be re-confirmed. The server independently rejects Tier 2 statements unless the user pre-authorized this request (a `!` prefix on their message); when blocked, present the exact statements and tell the user to re-send the request prefixed with `!` if they approve.
 
 If a request maps to a higher tier than the user seems to expect (their `UPDATE` omits `WHERE`), flag it before doing anything. If you can't confirm prod vs. non-prod and the op is Tier 2, that is itself a stop condition.
@@ -214,8 +214,6 @@ TOOLS: list[dict] = [
 ]
 
 
-_MAX_AGENT_TURNS = 12
-
 # Cache the system prompt (and the tools block that precedes it in the prompt
 # prefix) across the loop's turns — it is identical on every call.
 _CACHED_SYSTEM = [
@@ -244,7 +242,7 @@ class LLM:
     def _create(self, messages: list[dict], **kwargs: Any):
         return self._client.messages.create(
             model=settings.answer_model,
-            max_tokens=2048,
+            max_tokens=settings.answer_max_tokens,
             system=cast(Any, _CACHED_SYSTEM),
             tools=cast(Any, TOOLS),
             messages=cast(Any, messages),
@@ -266,7 +264,7 @@ class LLM:
 
         session = _DBSession(allow_destructive=allow_destructive)
         try:
-            for _ in range(_MAX_AGENT_TURNS):
+            for _ in range(settings.max_agent_turns):
                 resp = self._create(messages)
 
                 messages.append({"role": "assistant", "content": resp.content})
@@ -382,7 +380,8 @@ def _format_context(blocks: list[dict]) -> str:
 
 
 # Conservative keyword scan for Tier 2 (destructive/structural/unbounded) SQL.
-# May rarely flag a keyword inside a literal; the model can rephrase. Scanning the
+# This is an agent-safety guardrail, not the security boundary — the read-only
+# session default (see _DBSession) is what Postgres actually enforces. Scanning the
 # whole string also catches multi-statement payloads ("SELECT 1; DROP TABLE x").
 _TIER2_RE = re.compile(
     r"\b(drop|truncate|alter|create|grant|revoke|reindex|comment\s+on)\b",
@@ -390,14 +389,30 @@ _TIER2_RE = re.compile(
 )
 
 
+def _strip_sql_noise(sql: str) -> str:
+    # Blank out comments and quoted literals/identifiers so the keyword scan can't be
+    # fooled by a keyword inside a string (`SELECT 'drop ...'`) or smuggled past in a
+    # comment. Dollar-quoted bodies are left intact on purpose, so DDL hidden in a DO
+    # block still trips the scan (conservative — better to over-flag than under-flag).
+    sql = re.sub(r"--[^\n]*", " ", sql)              # line comments
+    sql = re.sub(r"/\*.*?\*/", " ", sql, flags=re.DOTALL)  # block comments
+    sql = re.sub(r"'(?:''|[^'])*'", " ", sql)        # single-quoted strings ('' escape)
+    sql = re.sub(r'"(?:""|[^"])*"', " ", sql)        # double-quoted identifiers
+    return sql
+
+
 def _tier2_reason(sql: str) -> str | None:
     """Why `sql` is Tier 2, or None if it isn't."""
-    m = _TIER2_RE.search(sql)
+    scrubbed = _strip_sql_noise(sql)
+    m = _TIER2_RE.search(scrubbed)
     if m:
-        return f"{m.group(0).upper()} statement"
-    head = re.match(r"\s*(update|delete)\b", sql, re.IGNORECASE)
-    if head and not re.search(r"\bwhere\b", sql, re.IGNORECASE):
-        return f"{head.group(1).upper()} without WHERE"
+        keyword = " ".join(m.group(0).upper().split())  # normalize "comment  on"
+        return f"{keyword} statement"
+    # Flag an unbounded UPDATE/DELETE in *any* statement of the batch, not just the first.
+    for stmt in scrubbed.split(";"):
+        head = re.match(r"\s*(update|delete)\b", stmt, re.IGNORECASE)
+        if head and not re.search(r"\bwhere\b", stmt, re.IGNORECASE):
+            return f"{head.group(1).upper()} without WHERE"
     return None
 
 
@@ -417,7 +432,24 @@ class _DBSession:
                 # Bound every statement so a runaway query can't stall the agent turn.
                 options=f"-c statement_timeout={settings.statement_timeout_ms}",
             )
+            # Default the session to READ ONLY: any statement issued outside an explicit
+            # `begin` is refused a write by Postgres itself. This is the real backstop for
+            # writes the Tier 2 keyword scan can't see — data-modifying CTEs
+            # (`WITH x AS (DELETE ...) ...`), volatile functions, `SELECT INTO`. `begin`
+            # lifts it for authorized writes; `commit`/`rollback` restore it.
+            self._conn.set_session(readonly=True)
         return self._conn
+
+    def _set_readonly(self, readonly: bool) -> None:
+        # Toggle the session read/write default. Only valid outside a transaction, so
+        # callers invoke it right after a commit/rollback. Best-effort: never mask the
+        # original error if the connection is already broken.
+        if self._conn is None:
+            return
+        try:
+            self._conn.set_session(readonly=readonly)
+        except Exception:
+            pass
 
     def _check_tier2(self, sql: str) -> None:
         if self._allow_destructive:
@@ -458,7 +490,8 @@ class _DBSession:
         
         except Exception as e:
             # Mark the connection clean so subsequent tool calls aren't stuck in an
-            # aborted-transaction state.
+            # aborted-transaction state, and return to the read-only default so a failed
+            # write never leaves the session read/write for later un-wrapped statements.
             rolled_back = False
             if self._conn is not None:
                 try:
@@ -467,10 +500,17 @@ class _DBSession:
                 except Exception:
                     pass
                 self._in_tx = False
+                self._set_readonly(True)
+            hint = ""
+            if getattr(e, "pgcode", None) == "25006":  # read_only_sql_transaction
+                hint = (
+                    " (the connection is read-only outside a transaction — call `begin` "
+                    "before a write)"
+                )
             return (
                 {
                     "error": type(e).__name__,
-                    "message": str(e),
+                    "message": str(e) + hint,
                     # Tell the model its transaction is gone, or it may keep
                     # operating as if the tx were still open.
                     "transaction_rolled_back": rolled_back,
@@ -600,6 +640,9 @@ class _DBSession:
         # psycopg2 opens an implicit tx on first statement; ensure clean state then mark.
         conn = self._ensure_conn()
         conn.rollback()
+        # Lift the read-only default for this write transaction (Tier 2 statements are
+        # still gated separately by _check_tier2).
+        self._set_readonly(False)
         self._in_tx = True
         return {"status": "transaction open"}
 
@@ -607,6 +650,7 @@ class _DBSession:
         if not self._in_tx or self._conn is None:
             return {"status": "no open transaction"}
         self._conn.commit()
+        self._set_readonly(True)
         self._in_tx = False
         return {"status": "committed"}
 
@@ -614,5 +658,6 @@ class _DBSession:
         if not self._in_tx or self._conn is None:
             return {"status": "no open transaction"}
         self._conn.rollback()
+        self._set_readonly(True)
         self._in_tx = False
         return {"status": "rolled back"}

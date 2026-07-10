@@ -1,0 +1,51 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "data-spear"
+version = "1.0.0"
+description = "An autonomous SQL agent for PostgreSQL, in your terminal."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+dependencies = [
+    "anthropic>=0.50.0",
+    "fastapi>=0.111.0",
+    "pinecone>=5.0.0",
+    "psycopg2-binary>=2.9.0",
+    "pydantic-settings>=2.0.0",
+    "python-dotenv>=1.0.0",         # backs pydantic-settings' .env loading
+    "uvicorn[standard]>=0.29.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "httpx>=0.27.0",                # required by fastapi.testclient
+    "ruff>=0.6.0",
+]
+
+[project.scripts]
+data-spear-server = "data_spear.api.main:run"
+
+[tool.setuptools.packages.find]
+include = ["data_spear*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# Put the repo root on sys.path so `import data_spear...` resolves without an
+# editable install (replaces the old tests/conftest.py sys.path shim).
+pythonpath = ["."]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+
+[tool.ruff.lint.per-file-ignores]
+# llm.py embeds the agent system prompt as a long triple-quoted string; its prose
+# lines legitimately exceed the code line length.
+"data_spear/llm.py" = ["E501"]

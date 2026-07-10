@@ -1,6 +1,6 @@
 import pytest
 
-from chunker import chunk_text, serialize_row
+from data_spear.chunker import chunk_text, serialize_row
 
 
 class TestSerializeRow:
@@ -68,7 +68,7 @@ class TestChunkText:
         chunks = list(chunk_text(text, 60, 30))
         assert len(chunks) >= 2
         # with overlap, consecutive chunks share at least one word
-        for a, b in zip(chunks, chunks[1:]):
+        for a, b in zip(chunks, chunks[1:], strict=False):
             assert set(a.split()) & set(b.split())
 
     def test_zero_overlap(self):

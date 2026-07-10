@@ -1,7 +1,7 @@
 # Data-Chunking for embedding and retrieval 
 from __future__ import annotations
 
-from typing import Iterator
+from collections.abc import Iterator
 
 
 def serialize_row(row: dict) -> str:

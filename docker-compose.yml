@@ -1,29 +1,27 @@
-version: "3.9"
-
 services:
-  # ── PostgreSQL with pgvector ─────────────────────────────────────────────
+  # Optional local Postgres to experiment against. The API container reaches it by
+  # the service name `postgres`, e.g.:
+  #   ./scripts/data-spear.sh connect --host postgres --dbname postgres --user postgres --password postgres
+  # Delete this service (and the api `depends_on` / `PG_DSN` below) if you connect to
+  # a hosted database (Neon, Supabase, RDS, ...) instead.
   postgres:
-    image: pgvector/pgvector:pg16
+    image: postgres:16
     restart: unless-stopped
     environment:
-      POSTGRES_DB: ${OMNIGRAPH_DB_NAME:-omnigraph}
-      POSTGRES_USER: ${OMNIGRAPH_DB_USER:-postgres}
-      POSTGRES_PASSWORD: ${OMNIGRAPH_DB_PASSWORD:-postgres}
+      POSTGRES_DB: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
     volumes:
       - pgdata:/var/lib/postgresql/data
-      # SQL files run in alphabetical order on first startup
-      - ./sql/schema.sql:/docker-entrypoint-initdb.d/01_schema.sql
-      - ./sql/procedures_triggers.sql:/docker-entrypoint-initdb.d/02_procedures.sql
-      - ./sql/sample_data.sql:/docker-entrypoint-initdb.d/03_sample_data.sql
     ports:
       - "5432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${OMNIGRAPH_DB_USER:-postgres} -d ${OMNIGRAPH_DB_NAME:-omnigraph}"]
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
       timeout: 5s
       retries: 10
 
-  # ── OmniGraph REST API ───────────────────────────────────────────────────
+  # ── Data-Spear API ───────────────────────────────────────────────────────────
   api:
     build: .
     restart: unless-stopped
@@ -32,8 +30,10 @@ services:
     env_file:
       - .env
     environment:
-      OMNIGRAPH_DB_HOST: postgres
-      UVICORN_WORKERS: ${UVICORN_WORKERS:-2}
+      # Single worker: the agent keeps the active DB connection in per-process state.
+      UVICORN_WORKERS: 1
+      # In-container fallback DSN pointing at the bundled postgres service above.
+      PG_DSN: postgresql://postgres:postgres@postgres:5432/postgres
     depends_on:
       postgres:
         condition: service_healthy

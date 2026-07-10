@@ -1,4 +1,4 @@
-from rag import RAG, RAGAnswer
+from data_spear.rag import RAG, RAGAnswer
 
 HITS = [
     {"id": "t:1", "score": 0.9, "fields": {"chunk_text": "alpha"}},

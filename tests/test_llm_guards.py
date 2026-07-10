@@ -1,6 +1,6 @@
 import pytest
 
-from llm import (
+from data_spear.llm import (
     _DBSession,
     _format_context,
     _one_line,
@@ -35,6 +35,24 @@ class TestTier2Reason:
 
     def test_delete_without_where(self):
         assert _tier2_reason("delete from t") == "DELETE without WHERE"
+
+    def test_unbounded_delete_in_later_statement(self):
+        assert _tier2_reason("SELECT 1; DELETE FROM t") == "DELETE without WHERE"
+
+    def test_unbounded_update_in_later_statement(self):
+        assert _tier2_reason("SELECT 1; UPDATE t SET a = 1") == "UPDATE without WHERE"
+
+    @pytest.mark.parametrize(
+        "sql",
+        [
+            "SELECT 'drop table x' AS note",     # keyword inside a string literal
+            "SELECT 1 -- drop table x",          # keyword inside a line comment
+            "SELECT 1 /* truncate t */",         # keyword inside a block comment
+            'SELECT "create" FROM t',            # keyword as a quoted identifier
+        ],
+    )
+    def test_keywords_in_literals_and_comments_ignored(self, sql):
+        assert _tier2_reason(sql) is None
 
     @pytest.mark.parametrize(
         "sql",
@@ -134,3 +152,75 @@ class TestFormatting:
             _summarize_tool_result({"error": "Boom", "message": "bad"}, True)
             == "Boom: bad"
         )
+
+
+class FakeConn:
+    """Records set_session / transaction calls so read-only state can be asserted
+    without a live database."""
+
+    def __init__(self) -> None:
+        self.readonly: bool | None = None
+        self.log: list = []
+
+    def set_session(self, readonly=None, **kw):
+        self.readonly = readonly
+        self.log.append(("set_session", readonly))
+
+    def rollback(self):
+        self.log.append(("rollback",))
+
+    def commit(self):
+        self.log.append(("commit",))
+
+    def close(self):
+        self.log.append(("close",))
+
+
+class TestReadOnlyLifecycle:
+    def test_fresh_connection_defaults_to_readonly(self, monkeypatch):
+        fake = FakeConn()
+        monkeypatch.setattr("data_spear.llm.psycopg2.connect", lambda *a, **k: fake)
+        session = _DBSession()
+        assert session._ensure_conn() is fake
+        assert fake.readonly is True
+
+    def test_begin_lifts_readonly(self):
+        session = _DBSession()
+        session._conn = FakeConn()  # inject to skip a real connect
+        session._begin()
+        assert session._in_tx is True
+        assert session._conn.readonly is False
+
+    def test_commit_restores_readonly(self):
+        session = _DBSession()
+        session._conn = FakeConn()
+        session._begin()
+        session._commit()
+        assert session._in_tx is False
+        assert session._conn.readonly is True
+
+    def test_rollback_restores_readonly(self):
+        session = _DBSession()
+        session._conn = FakeConn()
+        session._begin()
+        session._rollback()
+        assert session._in_tx is False
+        assert session._conn.readonly is True
+
+    def test_failed_dispatch_restores_readonly(self, monkeypatch):
+        # A write that raises mid-transaction must roll back AND return to the
+        # read-only default, so a later un-wrapped statement can't run read/write.
+        fake = FakeConn()
+        monkeypatch.setattr("data_spear.llm.psycopg2.connect", lambda *a, **k: fake)
+        session = _DBSession(allow_destructive=True)
+        session._begin()
+        assert fake.readonly is False
+
+        def boom(**kwargs):
+            raise RuntimeError("kaboom")
+
+        monkeypatch.setattr(session, "_run_query", boom)
+        result, is_error = session.dispatch("run_query", {"sql": "INSERT INTO t VALUES (1)"})
+        assert is_error
+        assert session._in_tx is False
+        assert fake.readonly is True

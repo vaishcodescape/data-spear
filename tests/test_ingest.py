@@ -1,7 +1,7 @@
 import pytest
 
-import ingest
-from config import DocumentSource, RowSource
+import data_spear.ingest as ingest
+from data_spear.config import DocumentSource, RowSource
 
 
 def test_row_source_records(monkeypatch):

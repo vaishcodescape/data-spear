@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -48,6 +48,10 @@ class Settings(BaseSettings):
     # Anthropic
     anthropic_api_key: str = ""
     answer_model: str = "claude-opus-4-8"
+    # Max output tokens the model may emit per agent turn.
+    answer_max_tokens: int = 2048
+    # Hard cap on agent-loop turns before a final synthesis is forced.
+    max_agent_turns: int = 12
 
     # Retrieval
     top_k: int = 6
