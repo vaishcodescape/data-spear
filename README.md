@@ -5,8 +5,7 @@
 # Data-Spear
 
 <p>
-  <a href="https://github.com/vaishcodescape/data-spear/actions/workflows/ci.yml"><img src="https://github.com/vaishcodescape/data-spear/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
-  <a href="https://www.python.org/"><img src="https://img.shields.io/badge/Python_3.11+-14191f?logo=python&logoColor=3776AB" alt="Python" /></a>
+  <a href="https://www.python.org/"><img src="https://img.shields.io/badge/Python_3.14+-14191f?logo=python&logoColor=3776AB" alt="Python" /></a>
   <a href="https://www.postgresql.org/"><img src="https://img.shields.io/badge/PostgreSQL-14191f?logo=postgresql&logoColor=4169E1" alt="PostgreSQL" /></a>
   <a href="https://www.anthropic.com/"><img src="https://img.shields.io/badge/Claude_AI-14191f?logo=anthropic&logoColor=D4A574" alt="Claude AI" /></a>
   <a href="https://www.gnu.org/software/bash/"><img src="https://img.shields.io/badge/Bash_CLI-14191f?logo=gnubash&logoColor=4EAA25" alt="Bash CLI" /></a>
