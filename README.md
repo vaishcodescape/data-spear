@@ -187,3 +187,4 @@ CI runs the same lint and tests on every push and pull request (Python 3.11–3.
 ## License
 
 [MIT](LICENSE)
+Built by vaishcodescape ☕
